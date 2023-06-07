@@ -33,6 +33,7 @@ function getInverseTheme(theme) {
   }
   return ''; 
 }
+
 function getRatingColor(rating) {
   const ratingRange = [Number.MIN_VALUE, 1200, 1400, 1600, 1900, 2200, 2400]; 
   const ratingColor = ['gray', 'green', 'cyan', 'blue', 'violet', 'orange', 'red']; 
@@ -40,7 +41,7 @@ function getRatingColor(rating) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState('light'); 
+  const [theme, setTheme] = useState(localStorage.getItem('theme')); 
   const [calculationStatus, setCalculationStatus] = useState(CalculationStatus.CALCULATION_DONE); 
   const [results, setResults] = useState(null); 
 
@@ -61,8 +62,10 @@ export default function App() {
               <BrightnessHighFill width='1.5em' height='1.5em' color={theme === 'light' ? 'black' : 'white'}/>&nbsp;&nbsp;
               <Form.Check 
                 type='switch' 
+                defaultChecked={theme === 'dark'}
                 onChange={e => {
                   setTheme(e.target.checked ? 'dark' : 'light'); 
+                  localStorage.setItem('theme', e.target.checked ? 'dark' : 'light'); 
                   document.body.className = `bg-${e.target.checked ? 'dark' : 'light'}`;
                 }}
               />&nbsp;

@@ -4,6 +4,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+if(!localStorage.getItem('theme')) {
+  localStorage.setItem('theme', 'light'); 
+}
+document.body.className = `bg-${localStorage.getItem('theme')}`;  
+
 const root = createRoot(document.getElementById('root'));
 root.render(
   <StrictMode>
