@@ -1,38 +1,189 @@
-.App {
-  text-align: center;
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+input::placeholder {
+  color: inherit !important; 
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+.user-red {
+  color: red !important; 
+}
+
+.user-orange {
+  color: #ff8c00 !important; 
+}
+
+.user-violet {
+  color: #a0a !important; 
+}
+
+.user-blue {
+  color: blue !important; 
+}
+
+.user-cyan {
+  color: #03a89e !important; 
+}
+
+.user-green {
+  color: green !important; 
+}
+
+.user-gray {
+  color: gray !important; 
+}
+
+.cell-accepted {
+  color: #0a0; 
+  font-weight: bold; 
+}
+
+.cell-rejected-light {
+  color: #00a; 
+  font-weight: normal; 
+}
+
+.cell-rejected-dark {
+  color: #a0a; 
+  font-weight: normal; 
+}
+
+.rating-increase {
+  color: #0a0; 
+}
+
+.rating-decrease {
+  color: #a00; 
+}
+
+.rating-constant {
+  color: #aaa; 
+}
+
+.calculator {
+  width: 95%; 
+}
+
+.calculator form * {
+  font-size: 12px; 
+}
+
+.user-info, .contest-select {
+  width: 95%; 
+}
+
+.user-info input {
+  box-sizing: border-box; 
+  text-align: left; 
+}
+
+.scoreboard {
+  width: 100%; 
+  height: max-content; 
+}
+
+.scoreboard table {
+  position: relative; 
+  left: 1em;   
+  width: max-content; 
+}
+
+.scoreboard table > colgroup {
+  width: 3.2em; 
+}
+
+.scoreboard table input {
+  box-sizing: border-box; 
+  border: 0; 
+  border-radius: 0;
+  text-align: center; 
+  width: 100%; 
+  background-color: inherit !important; 
+}
+
+.calculator-output {
+  width: 70%; 
+}
+
+.calculator-output * {
+  font-size: 12px; 
+}
+
+.top-row {
+  height: 2.5em
+}
+
+.bottom-row {
+  height: 1em; 
+}
+
+.scoreboard-refresh-button {
+  background-color: transparent; 
+  border: none; 
+  outline: none; 
+}
+
+.submit-button { 
+  width: 7em; 
+}
+
+.submit-button > button {
+  box-sizing: border-box; 
+  text-align: center; 
+  width: 100%; 
+}
+
+.calculator-output > table {
+  width: 100%; 
+}
+
+.calculator-output > span {
+  font-size: 14px; 
+}
+
+@media screen and (min-width: 576px) {
+  .calculator form * {
+    font-size: 14px; 
+  }
+
+  .user-info, .contest-select {
+    width: 80%; 
+  }
+
+  .calculator-output { 
+    width: 400px; 
+  }
+
+  .calculator-output * {
+    font-size: 14px; 
+  }
+
+  .calculator-output > span {
+    font-size: 16px; 
+  }
+
+  .scoreboard table > colgroup {
+    width: 4em; 
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+@media screen and (min-width: 768px) {
+  .calculator {
+    width: 720px; 
+  }  
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+  .calculator form * {
+    font-size: 16px; 
   }
-  to {
-    transform: rotate(360deg);
+
+  .user-info, .contest-select {
+    width: 70%; 
+  }
+
+  .calculator-output * {
+    font-size: 16px; 
   }
 }
