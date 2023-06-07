@@ -5,13 +5,15 @@ let memRatingChanges = null;
 let memStandings = null; 
 const memRanks = Array(8001); 
 
-function Contestant(handle, rating, rank) {
+function Contestant(handle, rating, points, penalty) {
   if(!new.target) {
-    return new Contestant(handle, rating, rank); 
+    return new Contestant(handle, rating, points, penalty); 
   }
   this.handle = handle; 
   this.rating = rating; 
-  this.rank = rank; 
+  this.points = points; 
+  this.penalty = penalty; 
+  this.rank = 0; 
   this.seed = 0; 
   this.needRating = 0; 
   this.delta = 0; 
@@ -28,6 +30,19 @@ function getSeed(contestants, rating) {
   return memRanks[rating]; 
 }
 
+function getRatingToRank(contestants, rank) {
+  let left = 1, right = 8000; 
+  while(right - left > 1) {
+    const mid = Math.floor((left + right) / 2); 
+    if(getSeed(contestants, mid) < rank) {
+      right = mid; 
+    } else {
+      left = mid; 
+    }
+  }
+  return left; 
+}
+
 function compareContestants(type, ca, cb) {
   if(type === 'CF') {
     return ca.points - cb.points; 
@@ -40,7 +55,8 @@ function compareContestants(type, ca, cb) {
   }
 }
 
-async function getRankInContest(type, standings, points, penalty) {
+/*
+function getRankInContest(type, standings, points, penalty) {
   let left = 0, right = standings.length-1; 
   while(left <= right) {
     const mid = Math.floor((left + right) / 2); 
@@ -61,18 +77,23 @@ async function getRankInContest(type, standings, points, penalty) {
   }  
   return rank;
 }
+*/
 
-function getRatingToRank(contestants, rank) {
-  let left = 1, right = 8000; 
-  while(right - left > 1) {
-    const mid = Math.floor((left + right) / 2); 
-    if(getSeed(contestants, mid) < rank) {
-      right = mid; 
-    } else {
-      left = mid; 
+function reassignRanks(type, contestants) {
+  contestants.sort((ca, cb) => -compareContestants(type, ca, cb));
+  let first = 0; 
+  for(let i = 1; i < contestants.length; ++i) {
+    if(compareContestants(type, contestants[first], contestants[i])) {
+      for(let j = first; j < i; ++j) {
+        contestants[j].rank = i; 
+      }
+      first = i; 
     }
   }
-  return left; 
+  for(let i = first; i < contestants.length; ++i) {
+    contestants[i].rank = contestants.length; 
+  }
+  return contestants; 
 }
 
 function adjustRatingChanges(contestants) {
@@ -80,7 +101,6 @@ function adjustRatingChanges(contestants) {
   const allSum = contestants.reduce((acc, cur) => acc + cur.delta, 0); 
   const allInc = Math.trunc(-allSum / contestants.length) - 1; 
   contestants.forEach(elem => elem.delta += allInc); 
-  console.log(allInc); 
 
   const topCount = Math.min(contestants.length, 4 * Math.round(Math.sqrt(contestants.length)));     
   const topSum = contestants.slice(0, topCount).reduce((acc, cur) => acc + cur.delta, 0); 
@@ -88,11 +108,10 @@ function adjustRatingChanges(contestants) {
   for(let i = 0; i < topCount; i++) {
     contestants[i].delta += topInc; 
   }
-  console.log(topInc); 
   return contestants.sort((a, b) => a.rank - b.rank); 
 }
 
-export default async function getRatingChange(contestId, oldRating, points, penalty) {
+export default async function getRatingChange(handle, contestId, oldRating, points, penalty) {
   if(!memContest || memContest.id !== contestId) {
     const standingsRes = await enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}`);   
     const standingsData = await standingsRes.json(); 
@@ -135,15 +154,27 @@ export default async function getRatingChange(contestId, oldRating, points, pena
     memRanks.fill(0); 
   }
    
+  /*
   const contestants = memRatingChanges.map(rc => new Contestant(rc.handle, rc.oldRating, rc.rank));  
-  const contestRank = await getRankInContest(memContest.type, memStandings, points, penalty); 
+  const contestRank = getRankInContest(memContest.type, memStandings, points, penalty); 
   contestants.push(new Contestant('', oldRating, contestRank)); 
   contestants.forEach(elem => elem.rank += elem.rank >= contestRank); 
-  for(const c of contestants) {
+  */
+  let contestants = []; 
+  for(let i = 0; i < memRatingChanges.length; ++i) {
+    if(memRatingChanges[i].handle !== handle) {
+      contestants.push(new Contestant(
+        memRatingChanges[i].handle, memRatingChanges[i].oldRating, 
+        memStandings[i].points, memStandings[i].penalty));     
+    }
+  }
+  contestants.push(new Contestant(handle, oldRating, points, penalty)); 
+  reassignRanks(memContest.type, contestants); 
+  for(let c of contestants) {
     c.seed = getSeed(contestants, c.rating) - 0.5; 
     const midRank = Math.sqrt(c.rank * c.seed); 
     c.needRating = getRatingToRank(contestants, midRank); 
     c.delta = Math.trunc((c.needRating - c.rating) / 2); 
   }
-  return adjustRatingChanges(contestants).find((elem) => !elem.handle.length); 
+  return adjustRatingChanges(contestants).find((elem) => elem.handle === handle); 
 }

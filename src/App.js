@@ -82,8 +82,8 @@ export default function App() {
 function Calculator({ theme = 'light', setResults, setCalculationStatus }) {
   const [isLoading, setIsLoading] = useState(false);  
   const [contestId, setContestId] = useState(0); 
-  const [rating, setRating] = useState(''); 
   const [user, setUser] = useState(null); 
+  const [rating, setRating] = useState(''); 
   const [points, setPoints] = useState(0); 
   const [penalty, setPenalty] = useState(0); 
 
@@ -95,7 +95,7 @@ function Calculator({ theme = 'light', setResults, setCalculationStatus }) {
           onSubmit={e => {
             e.preventDefault(); 
             setCalculationStatus(CalculationStatus.CALCULATION_IN_PROGRESS); 
-            getRatingChange(contestId, rating.length ? parseInt(rating) : user.rating, points, penalty)
+            getRatingChange(user ? user.handle : '', contestId, rating.length ? parseInt(rating) : user.rating, points, penalty)
               .then(results => {
                 setCalculationStatus(CalculationStatus.CALCULATION_DONE);
                 setResults(results); 
