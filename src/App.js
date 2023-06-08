@@ -592,8 +592,8 @@ function ResultTable({ theme = 'light', results }) {
           <tr>
             <td className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Performance</span></td>
             <td className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}>
-              <span style={{fontWeight: 'bold'}} className={`user-${getRatingColor(results.needRating)}`}>
-                {results.needRating}
+              <span style={{fontWeight: 'bold'}} className={`user-${getRatingColor(results.performance)}`}>
+                {results.performance}
               </span>
             </td>
           </tr>

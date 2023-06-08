@@ -17,6 +17,7 @@ function Contestant(handle, rating, points, penalty) {
   this.seed = 0; 
   this.needRating = 0; 
   this.delta = 0; 
+  this.performance = 0; 
 }
 
 function getEloWinProbability(ra, rb) {
@@ -54,30 +55,6 @@ function compareContestants(type, ca, cb) {
     }
   }
 }
-
-/*
-function getRankInContest(type, standings, points, penalty) {
-  let left = 0, right = standings.length-1; 
-  while(left <= right) {
-    const mid = Math.floor((left + right) / 2); 
-    const cmp = compareContestants(type, {points: points, penalty: penalty}, standings[mid]); 
-    if(cmp <= 0) {
-      left = mid+1; 
-    } else {
-      right = mid-1; 
-    }
-  } 
-  let rank = 1;
-  if(left > 0) {
-    const cmp = compareContestants(type, {points: points, penalty: penalty}, standings[left-1]); 
-    rank = standings[left-1].rank; 
-    if(cmp) {
-      rank++; 
-    }
-  }  
-  return rank;
-}
-*/
 
 function reassignRanks(type, contestants) {
   contestants.sort((ca, cb) => -compareContestants(type, ca, cb));
@@ -154,12 +131,6 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
     memRanks.fill(0); 
   }
    
-  /*
-  const contestants = memRatingChanges.map(rc => new Contestant(rc.handle, rc.oldRating, rc.rank));  
-  const contestRank = getRankInContest(memContest.type, memStandings, points, penalty); 
-  contestants.push(new Contestant('', oldRating, contestRank)); 
-  contestants.forEach(elem => elem.rank += elem.rank >= contestRank); 
-  */
   let contestants = []; 
   for(let i = 0; i < memRatingChanges.length; ++i) {
     if(memRatingChanges[i].handle !== handle) {
@@ -175,6 +146,7 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
     const midRank = Math.sqrt(c.rank * c.seed); 
     c.needRating = getRatingToRank(contestants, midRank); 
     c.delta = Math.trunc((c.needRating - c.rating) / 2); 
+    c.performance = getRatingToRank(contestants, c.rank); 
   }
   return adjustRatingChanges(contestants).find((elem) => elem.handle === handle); 
 }
