@@ -15,3 +15,7 @@ Dark Mode
 ## Build 
 
 This project was built with [create-react-app](https://create-react-app.dev/). Run it with `npm start` or build it with `npm run build`.
+
+## Credits
+
+<a href="https://www.flaticon.com/free-icons/pillow" title="pillow icons">Pillow icons created by Freepik - Flaticon</a>
