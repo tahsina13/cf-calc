@@ -90,7 +90,7 @@ function adjustRatingChanges(contestants) {
 
 export default async function getRatingChange(handle, contestId, oldRating, points, penalty) {
   if(!memContest || memContest.id !== contestId) {
-    const standingsRes = await enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}`);   
+    const standingsRes = await enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}&showUnofficial=true`);   
     const standingsData = await standingsRes.json(); 
     if(standingsData.status === 'FAILED') {
       throw Error(standingsData.comment); 
@@ -141,7 +141,7 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
   }
   contestants.push(new Contestant(handle, oldRating, points, penalty)); 
   reassignRanks(memContest.type, contestants); 
-  for(let c of contestants) {
+  for(const c of contestants) {
     c.seed = getSeed(contestants, c.rating) - 0.5; 
     const midRank = Math.sqrt(c.rank * c.seed); 
     c.needRating = getRatingToRank(contestants, midRank); 

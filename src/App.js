@@ -75,14 +75,18 @@ export default function App() {
         </Container>
       </Navbar>
       <Container fluid>
-        <Calculator theme={theme} setCalculationStatus={setCalculationStatus} setResults={setResults}/>
+        <Calculator 
+          theme={theme} setResults={setResults} 
+          calculationStatus={calculationStatus} 
+          setCalculationStatus={setCalculationStatus} 
+        />
         <CalculatorOutput theme={theme} calculationStatus={calculationStatus} results={results} />
       </Container>
     </>
   );    
 }
 
-function Calculator({ theme = 'light', setResults, setCalculationStatus }) {
+function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, setResults }) {
   const [isLoading, setIsLoading] = useState(false);  
   const [contestId, setContestId] = useState(0); 
   const [user, setUser] = useState(null); 
@@ -123,7 +127,8 @@ function Calculator({ theme = 'light', setResults, setCalculationStatus }) {
             setPoints={setPoints} setPenalty={setPenalty} 
             isLoading={isLoading} setIsLoading={setIsLoading}
           />
-          <SubmitButton disabled={!contestId || isLoading || (!user && !rating.length)}/> 
+          <SubmitButton disabled={calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS || 
+            !contestId || isLoading || (!user && !rating.length)}/> 
         </Form>
       </Card>
     </Row>
