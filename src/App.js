@@ -135,28 +135,32 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
   );
 }
 
-function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
+function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {  
+  const [lastHandle, setLastHandle] = useState(''); 
   const [handle, setHandle] = useState(''); 
   const [isHandleFocused, setIsHandleFocused] = useState(false); 
   const [isRatingFocused, setIsRatingFocused] = useState(false); 
 
   async function updateUserInfo(handle) {
-    try {
-      const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
-      const data = await res.json(); 
-      if(data.status === 'OK') {
-        if(data.result.length) {
-          setUser(data.result[0]); 
-          setHandle(data.result[0].handle); 
+    if(lastHandle.toLowerCase() !== handle.toLowerCase()) {
+      setLastHandle(handle); 
+      try {
+        const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
+        const data = await res.json(); 
+        if(data.status === 'OK') {
+          if(data.result.length) {
+            setUser(data.result[0]); 
+            setHandle(data.result[0].handle); 
+          } else {
+            setUser(null); 
+          }
         } else {
-          setUser(null); 
+          throw Error(data.comment); 
         }
-      } else {
-        throw Error(data.comment); 
+      } catch(err) {
+        setUser(null); 
+        console.log(err.message); 
       }
-    } catch(err) {
-      setUser(null); 
-      console.log(err.message); 
     }
   }
 
@@ -175,11 +179,13 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
           }}
           onChange={e => {
             setUser(null); 
+            setLastHandle(''); 
             setHandle(e.target.value); 
           }}
           onKeyDown={e => {
             if(e.key === 'Enter') {
               e.preventDefault(); 
+              updateUserInfo(e.target.value); 
             }
           }}
         ></Form.Control>
@@ -441,8 +447,8 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
               {scores.map((s, idx) =>
                 <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
                   <FocusedInput 
-                    className='p-0'
-                    theme={theme}
+                    className='p-0' theme={theme}
+                    focusType='number' blurType='text'
                     disabled={!contest}
                     onChange={e => {
                       if(!isNaN(e.target.value)) {
@@ -534,13 +540,15 @@ function PointsCell({ theme = 'light', type, score }) {
   ); 
 }
 
-function FocusedInput({ className = '', theme = 'light', disabled, onChange, onKeyDown, onFocus, focusValue, onBlur, blurValue}) {
+function FocusedInput({ className = '', theme = 'light', focusType = 'text', blurType = 'text', 
+                        disabled, onChange, onKeyDown, onFocus, focusValue, onBlur, blurValue}) {
   const [focused, setFocused] = useState(false); 
 
   return (
     <Form.Control 
-      type='text' size='md' className={className}
+      size='md' className={className}
       style={{color: theme === 'light' ? 'black' : 'white'}}
+      type={focused ? focusType : blurType}
       disabled={disabled ? disabled : false}
       onChange={e => {
         if(onChange) {
