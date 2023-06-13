@@ -141,7 +141,7 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
   const [isHandleFocused, setIsHandleFocused] = useState(false); 
   const [isRatingFocused, setIsRatingFocused] = useState(false); 
 
-  async function updateUserInfo(handle) {
+  const updateUserInfo = async (handle) => {
     if(lastHandle.toLowerCase() !== handle.toLowerCase()) {
       setLastHandle(handle); 
       try {
@@ -217,8 +217,9 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
 function ContestSelect({ theme = 'light', setContestId }) {
   const [isLoading, setIsLoading] = useState(false); 
   const [contestOptions, setContestOptions] = useState([]); 
+  const [inputValue, setInputValue] = useState(''); 
 
-  async function getContestData() {
+  const getContestData = async () => {
     setIsLoading(true); 
     try {
       const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false'); 
@@ -236,23 +237,57 @@ function ContestSelect({ theme = 'light', setContestId }) {
     }
     setIsLoading(false); 
   }
-  
+ 
+  const Option = (props) => {
+    const {
+      children,
+      cx,
+      getStyles,
+      getClassNames,
+      isDisabled,
+      isFocused,
+      isSelected,
+      innerRef,
+      innerProps,
+      label,
+    } = props;
+    const index = label.toLowerCase().indexOf(inputValue.toLocaleLowerCase()); 
+    return (
+      <div
+        ref={innerRef}
+        style={getStyles('option', props)}
+        className={cx(
+          {
+            option: true,
+            'option--is-disabled': isDisabled,
+            'option--is-focused': isFocused,
+            'option--is-selected': isSelected,
+          },
+          getClassNames('option', props)
+        )}
+        {...innerProps}
+      >
+        <span>{children.toString().slice(0, index)}</span>
+        <span style={{color: theme === 'light' ? 'green' : 'lime', fontWeight: 'bold'}}>
+          {children.toString().slice(index, index + inputValue.length)}
+        </span>
+        <span>{children.toString().slice(index + inputValue.length)}</span>
+      </div>
+    );
+  };
+
   return (
     <Row className='contest-select mx-auto my-3 p-1'>
       <Select
+        components={{ Option }}
         classNames={{
           control: (_) => `bg-${theme}`,
           input: (_) => `text-${getInverseTheme(theme)}`,
           menu: (_) => `bg-${theme}`,
           placeholder: (_) => `text-${getInverseTheme(theme)}`,
-          option: (state) => {
-            if(state.isSelected) {
-              return 'bg-primary'; 
-            } else if(state.isFocused) {
-              return 'bg-info'; 
-            }
-            return ''; 
-          },
+          option: (state) => 
+            state.isSelected ? 'bg-primary' :
+            state.isFocused ? 'bg-info' : '',
           singleValue: (_) => `text-${getInverseTheme(theme)}`
         }} 
         options={contestOptions}
@@ -260,6 +295,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
         isClearable={true}
         isLoading={isLoading}
         onFocus={_ => getContestData()}
+        onInputChange={(value, _) => setInputValue(value)}
         onChange={newValue => setContestId(newValue ? parseInt(newValue.value) : 0)}
       />
     </Row>
@@ -274,11 +310,10 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
   const [submitTimes, setSubmitTimes] = useState([]); 
   const [attemptCounts, setAttemptCounts] = useState([]); 
 
-  function getProblemLink(contestId, index) {
-    return `https://codeforces.com/contest/${contestId}/problem/${index}`; 
-  }
+  const getProblemLink = (contestId, index) => 
+    `https://codeforces.com/contest/${contestId}/problem/${index}`; 
 
-  function getTimeStr(value) {
+  const getTimeStr = (value) => {
     if(!value.length) {
       return '--:--'; 
     }
@@ -287,7 +322,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
     return `${hr.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`
   }
   
-  function getTotalTime(type, scores) {
+  const getTotalTime = (type, scores) => {
     let totalTime = 0; 
     for(const s of scores) {
       if(s.hasOwnProperty('bestSubmissionTimeSeconds')) {
@@ -300,7 +335,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
     return totalTime; 
   }
   
-  function updateScore(index) {
+  const updateScore = (index) => {
     let newScores = scores.slice(); 
     let newSubmitTimes = submitTimes.slice(); 
     let newAttemptCounts = attemptCounts.slice(); 
@@ -339,7 +374,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
     let ignore = false; 
     const defaultProblems = ['A','B','C','D','E'].map(idx => ({index: idx})); 
 
-    function setNullContest() {
+    const setNullContest = () => {
       setContest(null); 
       setProblems(defaultProblems); 
       setInitialScores(Array(defaultProblems.length).fill({points: 0., rejectedAttemptCount: 0})); 
@@ -350,7 +385,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
       setPenalty(0); 
     }
 
-    async function getScores() {
+    const getScores = async () => {
       setIsLoading(true); 
       const res = await enqueueRequest(
         `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
