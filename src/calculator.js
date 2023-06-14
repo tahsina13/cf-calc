@@ -131,7 +131,7 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
     memRanks.fill(0); 
   }
    
-  let contestants = []; 
+  const contestants = []; 
   for(let i = 0; i < memRatingChanges.length; ++i) {
     if(memRatingChanges[i].handle !== handle) {
       contestants.push(new Contestant(
