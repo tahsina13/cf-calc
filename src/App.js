@@ -14,10 +14,11 @@ import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row'; 
 import Spinner from 'react-bootstrap/Spinner'; 
 import Table from 'react-bootstrap/Table'; 
-
-import Select from 'react-select'; 
-
 import { ArrowClockwise, BrightnessHighFill, MoonStarsFill, Github } from 'react-bootstrap-icons';
+
+import AsyncSelect from 'react-select/async'; 
+import { AsyncFzf } from 'fzf';
+
 
 const CalculationStatus = Object.freeze({
   CALCULATION_IN_PROGRESS: Symbol(0), 
@@ -148,7 +149,7 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
         const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
         const data = await res.json(); 
         if(data.status === 'OK') {
-          if(data.result.length) {
+          if(data.result.length && data.result[0].hasOwnProperty('rating')) {
             setUser(data.result[0]); 
             setHandle(data.result[0].handle); 
           } else {
@@ -172,7 +173,7 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
           style={{fontWeight: !isHandleFocused && user && user.hasOwnProperty('rating') ? 'bold' : 'normal'}}
           className={`${!isHandleFocused && user && user.hasOwnProperty('rating') ? `user-${getRatingColor(user.rating)}` : ''} 
             bg-${theme} text-${getInverseTheme(theme)}`}
-          onFocus={_ => setIsHandleFocused(true)}
+          onFocus={() => setIsHandleFocused(true)}
           onBlur={e => {
             updateUserInfo(e.target.value); 
             setIsHandleFocused(false); 
@@ -197,7 +198,7 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
           style={{fontWeight: !isRatingFocused && rating.length ? 'bold' : 'normal'}}
           className={`${!isRatingFocused && rating.length ? `user-${getRatingColor(rating)}` : ''} 
             bg-${theme} text-${getInverseTheme(theme)}`}
-          onFocus={_ => setIsRatingFocused(true)}
+          onFocus={() => setIsRatingFocused(true)}
           onBlur={e => {
             setRating(e.target.value); 
             setIsRatingFocused(false);
@@ -216,32 +217,13 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
 
 function ContestSelect({ theme = 'light', setContestId }) {
   const [isLoading, setIsLoading] = useState(false); 
-  const [contestOptions, setContestOptions] = useState([]); 
-  const [inputValue, setInputValue] = useState(''); 
+  const [contestFzf, setContestFzf] = useState(new AsyncFzf([])); 
+  const [defaultOptions, setDefaultOptions] = useState([]); 
 
-  const getContestData = async () => {
-    setIsLoading(true); 
-    try {
-      const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false'); 
-      const data = await res.json(); 
-      if(data.status === 'OK') {
-        setContestOptions(data.result
-          .filter((contest) => contest.phase === 'FINISHED' && contest.type !== 'IOI')
-          .map((contest) => ({value: contest.id.toString(), label: contest.name}))
-        ); 
-      } else {
-        throw Error(data.comment); 
-      }
-    } catch(err) {
-      console.log(err.message); 
-    }
-    setIsLoading(false); 
-  }
- 
   const Option = (props) => {
     const {
-      children,
       cx,
+      data,
       getStyles,
       getClassNames,
       isDisabled,
@@ -249,9 +231,22 @@ function ContestSelect({ theme = 'light', setContestId }) {
       isSelected,
       innerRef,
       innerProps,
-      label,
     } = props;
-    const index = label.toLowerCase().indexOf(inputValue.toLocaleLowerCase()); 
+
+    const textBlocks = []; 
+    for(let i = 0; i < data.label.length;) {
+      let j = i; 
+      while(j < data.label.length && data.positions.has(i) === data.positions.has(j)) {
+        j++;  
+      }
+      textBlocks.push(data.positions.has(i)
+        ? <span key={`${data.value}-${i}`} style={{color: theme === 'light' ? 'gold' : 'lime', fontWeight: 'bold'}}>
+            {data.label.slice(i, j)}
+          </span>
+        : <span key={`${data.value}-${i}`}>{data.label.slice(i, j)}</span>); 
+      i = j;   
+    }
+
     return (
       <div
         ref={innerRef}
@@ -267,39 +262,63 @@ function ContestSelect({ theme = 'light', setContestId }) {
         )}
         {...innerProps}
       >
-        <span>{children.toString().slice(0, index)}</span>
-        <span style={{color: theme === 'light' ? 'green' : 'lime', fontWeight: 'bold'}}>
-          {children.toString().slice(index, index + inputValue.length)}
-        </span>
-        <span>{children.toString().slice(index + inputValue.length)}</span>
+        {textBlocks}
       </div>
     );
   };
 
+  const getContestData = async () => {
+    setIsLoading(true); 
+    try {
+      const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false'); 
+      const data = await res.json(); 
+      if(data.status === 'OK') {
+        const fzf = new AsyncFzf(data.result
+          .filter((contest) => contest.phase === 'FINISHED' && contest.type !== 'IOI')
+          .map((contest) => ({value: contest.id.toString(), label: contest.name, relativeTimeSeconds: contest.relativeTimeSeconds})),
+          { selector: item => item.label, tiebreakers: [(a, b) => a.item.relativeTimeSeconds - b.item.relativeTimeSeconds] }); 
+        setContestFzf(fzf); 
+        const entries = await fzf.find(''); 
+        setDefaultOptions(entries.map(e => ({...e.item, positions: e.positions}))); 
+      } else {
+        throw Error(data.comment); 
+      }
+    } catch(err) {
+      console.log(err.message); 
+    }
+    setIsLoading(false); 
+  }; 
+
+  const loadOptions = async (inputValue, callback) => {
+    try {
+      const entries = await contestFzf.find(inputValue); 
+      const options = entries.map(e => ({...e.item, positions: e.positions})); 
+      callback(options); 
+    } catch {} 
+  };
+
   return (
     <Row className='contest-select mx-auto my-3 p-1'>
-      <Select
+      <AsyncSelect
         components={{ Option }}
         classNames={{
-          control: (_) => `bg-${theme}`,
-          input: (_) => `text-${getInverseTheme(theme)}`,
-          menu: (_) => `bg-${theme}`,
-          placeholder: (_) => `text-${getInverseTheme(theme)}`,
+          control: () => `bg-${theme}`,
+          input: () => `text-${getInverseTheme(theme)}`,
+          menu: () => `bg-${theme}`,
+          placeholder: () => `text-${getInverseTheme(theme)}`,
           option: (state) => 
             state.isSelected ? 'bg-primary' :
             state.isFocused ? 'bg-info' : '',
-          singleValue: (_) => `text-${getInverseTheme(theme)}`
+          singleValue: () => `text-${getInverseTheme(theme)}`
         }} 
-        options={contestOptions}
-        filterOption={(contestOption, inputValue) => contestOption.label.toLowerCase().includes(inputValue.toLowerCase())} 
         isClearable={true}
         isLoading={isLoading}
-        onFocus={_ => getContestData()}
-        onInputChange={(value, _) => setInputValue(value)}
+        onFocus={getContestData}
         onChange={newValue => setContestId(newValue ? parseInt(newValue.value) : 0)}
+        cacheOptions defaultOptions={defaultOptions} loadOptions={loadOptions}
       />
     </Row>
-  )
+  );
 }
 
 function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty, isLoading, setIsLoading }) {
@@ -336,15 +355,19 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
   }
   
   const updateScore = (index) => {
-    let newScores = scores.slice(); 
-    let newSubmitTimes = submitTimes.slice(); 
-    let newAttemptCounts = attemptCounts.slice(); 
+    const newScores = scores.slice(); 
+    const newSubmitTimes = submitTimes.slice(); 
+    const newAttemptCounts = attemptCounts.slice(); 
     newScores[index] = Object.assign({}, scores[index]); 
-    if(!newAttemptCounts[index].length) {
+    if(!newAttemptCounts[index].length || parseInt(newAttemptCounts[index]) < 0) {
       newAttemptCounts[index] = '0'; 
     }
     newScores[index].rejectedAttemptCount = parseInt(newAttemptCounts[index]);
-    if(newSubmitTimes[index].length) {
+    if(!newSubmitTimes[index].length || parseInt(newSubmitTimes[index]) < 0) {
+      delete newScores[index].bestSubmissionTimeSeconds; 
+      newScores[index].points = 0; 
+      newSubmitTimes[index] = ''; 
+    } else {
       newScores[index].bestSubmissionTimeSeconds = parseInt(newSubmitTimes[index]) * 60; 
       if(newScores[index].bestSubmissionTimeSeconds > contest.durationSeconds) {
         newScores[index].bestSubmissionTimeSeconds = contest.durationSeconds; 
@@ -359,9 +382,6 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
       } else {
         newScores[index].points = 1;
       }
-    } else {
-      delete newScores[index].bestSubmissionTimeSeconds; 
-      newScores[index].points = 0; 
     }
     setScores(newScores); 
     setSubmitTimes(newSubmitTimes); 
@@ -468,9 +488,9 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
               <td className={`border border-${getInverseTheme(theme)} text-center`}>
                 <span>{scores.reduce((acc, cur) => acc + cur.points, 0)}</span>
               </td>
-              {scores.map((s, idx) => 
+              {scores.map((score, idx) => 
                 <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
-                  {contest ? <PointsCell theme={theme} type={contest.type} score={s} /> : <span></span>}
+                  {contest ? <PointsCell theme={theme} type={contest.type} score={score} /> : <span></span>}
                 </td>
               )}
               <td className='border-0'></td>
@@ -479,18 +499,16 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
               <td className={`border border-${getInverseTheme(theme)} text-center`}>
                 <span>{contest ? getTotalTime(contest.type, scores) : 0}</span>
               </td>
-              {scores.map((s, idx) =>
+              {submitTimes.map((submitTime, idx) =>
                 <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
                   <FocusedInput 
                     className='p-0' theme={theme}
                     focusType='number' blurType='text'
                     disabled={!contest}
                     onChange={e => {
-                      if(!isNaN(e.target.value)) {
-                        let newSubmitTimes = submitTimes.slice(); 
-                        newSubmitTimes[idx] = e.target.value; 
-                        setSubmitTimes(newSubmitTimes); 
-                      }
+                      let newSubmitTimes = submitTimes.slice(); 
+                      newSubmitTimes[idx] = e.target.value; 
+                      setSubmitTimes(newSubmitTimes); 
                     }}
                     onKeyDown={e => {
                       if(e.key === 'Enter') {
@@ -498,9 +516,9 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
                         updateScore(idx); 
                       }
                     }}
-                    focusValue={submitTimes[idx]}
+                    focusValue={submitTime}
                     onBlur={_ => updateScore(idx)}
-                    blurValue={getTimeStr(submitTimes[idx])}
+                    blurValue={getTimeStr(submitTime)}
                   />
                 </td> 
               )}
@@ -510,13 +528,13 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
               <td className={`border border-${getInverseTheme(theme)} text-center`}>
                 <span>{scores.reduce((acc, cur) => acc + cur.rejectedAttemptCount, 0)}</span>
               </td>
-              {scores.map((s, idx) =>
+              {attemptCounts.map((attemptCount, idx) =>
                 <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
                   <Form.Control
                     type='number' size='md' className='p-0'
                     style={{color: theme === 'light' ? 'black' : 'white'}}
                     disabled={!contest}
-                    value={attemptCounts[idx]}
+                    value={attemptCount}
                     onChange={e => {
                       let newAttemptCounts = attemptCounts.slice(); 
                       newAttemptCounts[idx] = e.target.value; 
