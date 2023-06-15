@@ -2,7 +2,7 @@
 
 ## About
 
-Yet another codeforces rating calculator! Want to know what your delta would've been if you had done slightly better? Put your worries to sleep without having to worry about contest rules or calculating points and penalties. 
+Yet another codeforces rating calculator! Want to know what your delta would've been if you had done slightly better? Put your worries to sleep without having to worry about contest rules or calculating points and penalties by hand. 
 
 ## Screenshots
 

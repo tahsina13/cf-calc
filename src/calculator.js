@@ -90,12 +90,17 @@ function adjustRatingChanges(contestants) {
 
 export default async function getRatingChange(handle, contestId, oldRating, points, penalty) {
   if(!memContest || memContest.id !== contestId) {
-    const standingsRes = await enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}&showUnofficial=true`);   
+    const standingsRes = await enqueueRequest(
+      `https://codeforces.com/api/contest.standings?` + 
+      `contestId=${contestId}&showUnofficial=true`
+    ).ready;   
     const standingsData = await standingsRes.json(); 
     if(standingsData.status === 'FAILED') {
       throw Error(standingsData.comment); 
     }
-    const ratingChangesRes = await enqueueRequest(`https://codeforces.com/api/contest.ratingChanges?contestId=${contestId}`); 
+    const ratingChangesRes = await enqueueRequest(
+      `https://codeforces.com/api/contest.ratingChanges?contestId=${contestId}`
+    ).ready; 
     const ratingChangesData = await ratingChangesRes.json(); 
     if(ratingChangesData.status === 'FAILED') {
       throw Error(ratingChangesData.comment); 

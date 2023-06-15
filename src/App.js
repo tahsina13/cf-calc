@@ -128,8 +128,11 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
             setPoints={setPoints} setPenalty={setPenalty} 
             isLoading={isLoading} setIsLoading={setIsLoading}
           />
-          <SubmitButton disabled={calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS || 
-            !contestId || isLoading || (!user && !rating.length)}/> 
+          <SubmitButton 
+            theme={theme} 
+            disabled={calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS || 
+              !contestId || isLoading || (!user && !rating.length)}
+          /> 
         </Form>
       </Card>
     </Row>
@@ -146,7 +149,7 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
     if(lastHandle.toLowerCase() !== handle.toLowerCase()) {
       setLastHandle(handle); 
       try {
-        const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
+        const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`).ready; 
         const data = await res.json(); 
         if(data.status === 'OK') {
           if(data.result.length && data.result[0].hasOwnProperty('rating')) {
@@ -270,7 +273,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
   const getContestData = async () => {
     setIsLoading(true); 
     try {
-      const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false'); 
+      const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false').ready; 
       const data = await res.json(); 
       if(data.status === 'OK') {
         const fzf = new AsyncFzf(data.result
@@ -410,7 +413,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
       const res = await enqueueRequest(
         `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
         `&from=1&count=1&showUnofficial=true&handles=${handle}`
-      ); 
+      ).ready; 
       const data = await res.json(); 
       if(!ignore) {
         if(data.status === 'OK') {
@@ -434,7 +437,10 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
             setPenalty(0); 
           }
         } else {
-          const resNoHandle = await enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}&from=1&count=1`); 
+          const resNoHandle = await enqueueRequest(
+            `https://codeforces.com/api/contest.standings?` + 
+            `contestId=${contestId}&from=1&count=1`
+          ).ready; 
           const dataNoHandle = await resNoHandle.json();  
           if(dataNoHandle.status === 'OK') {
             setContest(dataNoHandle.result.contest); 
@@ -630,10 +636,10 @@ function FocusedInput({ className = '', theme = 'light', focusType = 'text', blu
   ); 
 }
 
-function SubmitButton({ disabled }) {
+function SubmitButton({ theme = 'light', disabled }) {
   return (
     <Row className='submit-button mx-auto my-3 p-1'>
-      <Button type='submit' variant='outline-primary' disabled={disabled}>Calculate</Button>
+      <Button type='submit' variant={`${theme === 'light' ? 'outline-' : ''}primary`} disabled={disabled}>Calculate</Button>
     </Row>
   ); 
 }
