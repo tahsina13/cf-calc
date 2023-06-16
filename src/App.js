@@ -19,7 +19,7 @@ import { ArrowClockwise, BrightnessHighFill, MoonStarsFill, Github } from 'react
 import AsyncSelect from 'react-select/async'; 
 import { AsyncFzf } from 'fzf';
 
-
+// Utility enums and functions
 const CalculationStatus = Object.freeze({
   CALCULATION_IN_PROGRESS: Symbol(0), 
   CALCULATION_DONE: Symbol(1), 
@@ -140,10 +140,9 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
 }
 
 function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {  
+  // TODO: make the handle async by cancelling requests
   const [lastHandle, setLastHandle] = useState(''); 
   const [handle, setHandle] = useState(''); 
-  const [isHandleFocused, setIsHandleFocused] = useState(false); 
-  const [isRatingFocused, setIsRatingFocused] = useState(false); 
 
   const updateUserInfo = async (handle) => {
     if(lastHandle.toLowerCase() !== handle.toLowerCase()) {
@@ -171,16 +170,16 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
   return (
     <Row className='user-info mx-auto my-3 p-1'>
       <Col>
-        <Form.Control 
-          type='text' placeholder='Your Handle' size='md' value={handle}
-          style={{fontWeight: !isHandleFocused && user && user.hasOwnProperty('rating') ? 'bold' : 'normal'}}
-          className={`${!isHandleFocused && user && user.hasOwnProperty('rating') ? `user-${getRatingColor(user.rating)}` : ''} 
-            bg-${theme} text-${getInverseTheme(theme)}`}
-          onFocus={() => setIsHandleFocused(true)}
-          onBlur={e => {
-            updateUserInfo(e.target.value); 
-            setIsHandleFocused(false); 
+        <FocusedInput
+          theme={theme}
+          placeholder='Your Handle'
+          classNames={{
+            both: `bg-${theme} text-${getInverseTheme(theme)}`,
+            blur: user && user.hasOwnProperty('rating') 
+              ? `user-${getRatingColor(user.rating)} fw-bold` : ''
           }}
+          types={{both: 'text'}}
+          values={{both: handle}}
           onChange={e => {
             setUser(null); 
             setLastHandle(''); 
@@ -192,19 +191,18 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
               updateUserInfo(e.target.value); 
             }
           }}
-        ></Form.Control>
+          onBlur={e => updateUserInfo(e.target.value)}
+        />
       </Col>
       <Col>
-        <Form.Control 
-          type='number' placeholder='Old Rating' 
-          step='1' size='md'
-          style={{fontWeight: !isRatingFocused && rating.length ? 'bold' : 'normal'}}
-          className={`${!isRatingFocused && rating.length ? `user-${getRatingColor(rating)}` : ''} 
-            bg-${theme} text-${getInverseTheme(theme)}`}
-          onFocus={() => setIsRatingFocused(true)}
-          onBlur={e => {
-            setRating(e.target.value); 
-            setIsRatingFocused(false);
+        <FocusedInput
+          theme={theme}
+          placeholder='Old Rating'
+          types={{both: 'number'}}
+          values={{both: rating}}
+          classNames={{
+            both: `bg-${theme} text-${getInverseTheme(theme)}`,
+            blur: rating.length ? `user-${getRatingColor(rating)} fw-bold` : ''
           }}
           onChange={e => setRating(e.target.value)}
           onKeyDown={e => {
@@ -212,9 +210,83 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
               e.preventDefault(); 
             }
           }}
-        ></Form.Control>
+        />
       </Col>
     </Row>
+  ); 
+}
+
+function FocusedInput(props) {
+  const {
+    theme = 'light', 
+    size = 'md',
+    step = '1',
+    placeholder,
+    disabled,
+    styles, 
+    classNames,
+    types, 
+    values, 
+    onChange,
+    onKeyDown,
+    onFocus,
+    onBlur,
+  } = props; 
+  const [focused, setFocused] = useState(false); 
+
+  return (
+    <Form.Control 
+      size={size}
+      step={step}
+      placeholder={placeholder}
+      disabled={disabled ? disabled : false}
+      style={{
+        ...(styles && styles.hasOwnProperty('both') ? styles.both : {}), 
+        ...(focused 
+            ? (styles && styles.hasOwnProperty('focus') ? styles.focus : {}) 
+            : (styles && styles.hasOwnProperty('blur') ? styles.blur : {}))
+      }}
+      className={[
+        `text-${getInverseTheme(theme)}`,
+        classNames && classNames.hasOwnProperty('both') ? classNames.both : '',
+        focused
+          ? (classNames && classNames.hasOwnProperty('focus') ? classNames.focus : '')
+          : (classNames && classNames.hasOwnProperty('blur') ? classNames.blur : '')
+      ].join(' ')}
+      type={types && types.hasOwnProperty('both')
+        ? types.both 
+        : focused 
+        ? (types && types.hasOwnProperty('focus') ? types.focus : '') 
+        : (types && types.hasOwnProperty('blur') ? types.blur : '')}
+      value={values && values.hasOwnProperty('both')
+        ? values.both
+        : focused
+        ? (values && values.hasOwnProperty('focus') ? values.focus : '')
+        : (values && values.hasOwnProperty('blur') ? values.blur : '')
+      }
+      onChange={e => {
+        if(onChange) {
+          onChange(e); 
+        }
+      }}
+      onKeyDown={e => {
+        if(onKeyDown) {
+          onKeyDown(e); 
+        }
+      }}
+      onFocus={e => {
+        if(onFocus) {
+          onFocus(e); 
+        }
+        setFocused(true);
+      }}
+      onBlur={e => {
+        if(onBlur) {
+          onBlur(e); 
+        }
+        setFocused(false); 
+      }}
+    ></Form.Control> 
   ); 
 }
 
@@ -243,7 +315,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
         j++;  
       }
       textBlocks.push(data.positions.has(i)
-        ? <span key={`${data.value}-${i}`} style={{color: theme === 'light' ? 'gold' : 'lime', fontWeight: 'bold'}}>
+        ? <span key={`${data.value}-${i}`} style={{color: theme === 'light' ? 'gold' : 'lime'}} className='fw-bold'>
             {data.label.slice(i, j)}
           </span>
         : <span key={`${data.value}-${i}`}>{data.label.slice(i, j)}</span>); 
@@ -508,9 +580,11 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
               {submitTimes.map((submitTime, idx) =>
                 <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
                   <FocusedInput 
-                    className='p-0' theme={theme}
-                    focusType='number' blurType='text'
+                    theme={theme}
                     disabled={!contest}
+                    classNames={{both: 'p-0'}}
+                    types={{focus: 'number', blur: 'text'}}
+                    values={{focus: submitTime, blur: getTimeStr(submitTime)}}
                     onChange={e => {
                       let newSubmitTimes = submitTimes.slice(); 
                       newSubmitTimes[idx] = e.target.value; 
@@ -522,9 +596,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
                         updateScore(idx); 
                       }
                     }}
-                    focusValue={submitTime}
-                    onBlur={_ => updateScore(idx)}
-                    blurValue={getTimeStr(submitTime)}
+                    onBlur={() => updateScore(idx)}
                   />
                 </td> 
               )}
@@ -599,49 +671,37 @@ function PointsCell({ theme = 'light', type, score }) {
   ); 
 }
 
-function FocusedInput({ className = '', theme = 'light', focusType = 'text', blurType = 'text', 
-                        disabled, onChange, onKeyDown, onFocus, focusValue, onBlur, blurValue}) {
-  const [focused, setFocused] = useState(false); 
-
-  return (
-    <Form.Control 
-      size='md' className={className}
-      style={{color: theme === 'light' ? 'black' : 'white'}}
-      type={focused ? focusType : blurType}
-      disabled={disabled ? disabled : false}
-      onChange={e => {
-        if(onChange) {
-          onChange(e); 
-        }
-      }}
-      onKeyDown={e => {
-        if(onKeyDown) {
-          onKeyDown(e); 
-        }
-      }}
-      onFocus={e => {
-        if(onFocus) {
-          onFocus(e); 
-        }
-        setFocused(true);
-      }}
-      onBlur={e => {
-        if(onBlur) {
-          onBlur(e); 
-        }
-        setFocused(false); 
-      }}
-      value={focused ? focusValue : blurValue}  
-    ></Form.Control> 
-  ); 
-}
-
 function SubmitButton({ theme = 'light', disabled }) {
   return (
     <Row className='submit-button mx-auto my-3 p-1'>
       <Button type='submit' variant={`${theme === 'light' ? 'outline-' : ''}primary`} disabled={disabled}>Calculate</Button>
     </Row>
   ); 
+}
+
+function CalculatorOutput({ theme = 'light', calculationStatus, results }) {
+  switch(calculationStatus) {
+    case CalculationStatus.CALCULATION_IN_PROGRESS: 
+      return (
+        <Row className='calculator-output mx-auto my-3 text-center'>
+          <Spinner animation='border' variant={getInverseTheme(theme)} className='mx-auto'/>
+        </Row>
+      ); 
+    case CalculationStatus.CALCULATION_DONE: 
+      return (
+        <Row className='calculator-output mx-auto my-3 text-center'>
+          <ResultTable theme={theme} results={results} />
+        </Row>
+      ); 
+    case CalculationStatus.CALCULATION_FAILED: 
+      return (
+        <Row className='calculator-output mx-auto my-3 text-center'>
+          <span className='mx-auto text-danger'>Contest not found, or not rated, or not finished yet.</span>
+        </Row>
+      ); 
+    default: 
+      return <></>; 
+  } 
 }
 
 function ResultTable({ theme = 'light', results }) {
@@ -683,29 +743,4 @@ function ResultTable({ theme = 'light', results }) {
   } else {
     return <></>; 
   }
-}
-
-function CalculatorOutput({ theme = 'light', calculationStatus, results }) {
-  switch(calculationStatus) {
-    case CalculationStatus.CALCULATION_IN_PROGRESS: 
-      return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
-          <Spinner animation='border' variant={getInverseTheme(theme)} className='mx-auto'/>
-        </Row>
-      ); 
-    case CalculationStatus.CALCULATION_DONE: 
-      return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
-          <ResultTable theme={theme} results={results} />
-        </Row>
-      ); 
-    case CalculationStatus.CALCULATION_FAILED: 
-      return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
-          <span className='mx-auto text-danger'>Contest not found, or not rated, or not finished yet.</span>
-        </Row>
-      ); 
-    default: 
-      return <></>; 
-  } 
 }
