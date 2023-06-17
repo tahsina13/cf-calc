@@ -5,12 +5,15 @@ let processing = false;
 
 export default function enqueueRequest(url) {
   const controller = new AbortController(); 
-  const { abort, signal } = controller; 
+  const abort = controller.abort.bind(controller); 
+  const { signal } = controller; 
   const ready = new Promise((resolve, reject) => {
     const request = { url, done: false }; 
     signal.addEventListener('abort', () => {
-      reject(new Error()); 
-      request.done = true; 
+      if(!request.done) {
+        request.done = true; 
+        reject(signal.reason); 
+      }
     }); 
     queue.push(request); 
     if(!promisesFn.has(url)) {
@@ -18,12 +21,16 @@ export default function enqueueRequest(url) {
     }
     promisesFn.get(url).push({
       resolve: (res) => {
-        resolve(res); 
-        request.done = true; 
+        if(!request.done) {
+          request.done = true; 
+          resolve(res); 
+        }
       },
       reject: (err) => {
-        reject(err); 
-        request.done = true; 
+        if(!request.done) {
+          request.done = true; 
+          reject(err); 
+        }
       }
     }); 
     if(!processing) {
@@ -42,7 +49,8 @@ function dequeueRequest() {
     const startMillis = Date.now(); 
     const { url } = queue.shift(); 
     fetch(url)
-      .then(res => promisesFn.get(url).forEach(({ resolve }) => resolve(res)))
+      .then(res => res.json())
+      .then(data => promisesFn.get(url).forEach(({ resolve }) => resolve(data)))
       .catch(err => promisesFn.get(url).forEach(({ reject }) => reject(err)))
       .finally(() => {
         promisesFn.delete(url); 

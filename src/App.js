@@ -90,8 +90,9 @@ export default function App() {
 function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, setResults }) {
   const [isLoading, setIsLoading] = useState(false);  
   const [contestId, setContestId] = useState(0); 
-  const [user, setUser] = useState(null); 
+  const [handle, setHandle] = useState(''); 
   const [rating, setRating] = useState(''); 
+  const [user, setUser] = useState(null); 
   const [points, setPoints] = useState(0); 
   const [penalty, setPenalty] = useState(0); 
 
@@ -115,8 +116,9 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
           }}>
           <UserInfo 
             theme={theme}
-            user={user} setUser={setUser} 
+            handle={handle} setHandle={setHandle}
             rating={rating} setRating={setRating} 
+            user={user} setUser={setUser} 
           />
           <ContestSelect 
             theme={theme} 
@@ -124,9 +126,9 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
           />
           <Scoreboard 
             theme={theme}
-            contestId={contestId} handle={user ? user.handle : ''} 
-            setPoints={setPoints} setPenalty={setPenalty} 
+            contestId={contestId} handle={handle}
             isLoading={isLoading} setIsLoading={setIsLoading}
+            setPoints={setPoints} setPenalty={setPenalty} 
           />
           <SubmitButton 
             theme={theme} 
@@ -139,31 +141,28 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
   );
 }
 
-function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {  
-  // TODO: make the handle async by cancelling requests
-  const [lastHandle, setLastHandle] = useState(''); 
-  const [handle, setHandle] = useState(''); 
+function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user, setUser }) {  
+  const [request, setRequest] = useState(null); 
 
   const updateUserInfo = async (handle) => {
-    if(lastHandle.toLowerCase() !== handle.toLowerCase()) {
-      setLastHandle(handle); 
-      try {
-        const res = await enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`).ready; 
-        const data = await res.json(); 
-        if(data.status === 'OK') {
-          if(data.result.length && data.result[0].hasOwnProperty('rating')) {
-            setUser(data.result[0]); 
-            setHandle(data.result[0].handle); 
-          } else {
-            setUser(null); 
-          }
+    request?.abort(); 
+    setHandle(handle); 
+    const req = enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
+    setRequest(req); 
+    try {
+      const data = await req.ready; 
+      if(data.status === 'OK') {
+        if(data.result.length && data.result[0].hasOwnProperty('rating')) {
+          setUser(data.result[0]); 
         } else {
-          throw Error(data.comment); 
+          setUser(null); 
         }
-      } catch(err) {
-        setUser(null); 
-        console.log(err.message); 
+      } else {
+        throw Error(data.comment); 
       }
+    } catch(err) {
+      setUser(null); 
+      console.log(err.message); 
     }
   }
 
@@ -179,19 +178,13 @@ function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {
               ? `user-${getRatingColor(user.rating)} fw-bold` : ''
           }}
           types={{both: 'text'}}
-          values={{both: handle}}
-          onChange={e => {
-            setUser(null); 
-            setLastHandle(''); 
-            setHandle(e.target.value); 
-          }}
+          values={{both: user ? user.handle : handle}}
+          onChange={e => updateUserInfo(e.target.value)}
           onKeyDown={e => {
             if(e.key === 'Enter') {
               e.preventDefault(); 
-              updateUserInfo(e.target.value); 
             }
           }}
-          onBlur={e => updateUserInfo(e.target.value)}
         />
       </Col>
       <Col>
@@ -345,8 +338,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
   const getContestData = async () => {
     setIsLoading(true); 
     try {
-      const res = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false').ready; 
-      const data = await res.json(); 
+      const data = await enqueueRequest('https://codeforces.com/api/contest.list?gym=false').ready; 
       if(data.status === 'OK') {
         const fzf = new AsyncFzf(data.result
           .filter((contest) => contest.phase === 'FINISHED' && contest.type !== 'IOI')
@@ -396,7 +388,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
   );
 }
 
-function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty, isLoading, setIsLoading }) {
+function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoading, setPoints, setPenalty }) {
   const [contest, setContest] = useState(null); 
   const [problems, setProblems] = useState([]);  
   const [initialScores, setInitialScores] = useState([]); 
@@ -466,8 +458,9 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
   }
 
   useEffect(() => {
-    let ignore = false; 
     const defaultProblems = ['A','B','C','D','E'].map(idx => ({index: idx})); 
+    let ignore = false; 
+    let request = null; 
 
     const setNullContest = () => {
       setContest(null); 
@@ -481,54 +474,58 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
     }
 
     const getScores = async () => {
-      setIsLoading(true); 
-      const res = await enqueueRequest(
-        `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
-        `&from=1&count=1&showUnofficial=true&handles=${handle}`
-      ).ready; 
-      const data = await res.json(); 
-      if(!ignore) {
-        if(data.status === 'OK') {
-          setContest(data.result.contest); 
-          setProblems(data.result.problems); 
-          if(handle.length && data.result.rows.length && data.result.rows[0].party.participantType !== 'PRACTICE') {
-            setInitialScores(data.result.rows[0].problemResults); 
-            setScores(data.result.rows[0].problemResults); 
-            setSubmitTimes(data.result.rows[0].problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds') ? 
-              Math.floor(s.bestSubmissionTimeSeconds/60).toString() : '')); 
-            setAttemptCounts(data.result.rows[0].problemResults.map(s => s.rejectedAttemptCount.toString()));  
-            setPoints(data.result.rows[0].problemResults.reduce((acc, cur) => acc + cur.points, 0)); 
-            setPenalty(data.result.contest.type === 'ICPC' ? getTotalTime(data.result.contest.type, 
-              data.result.rows[0].problemResults) : 0); 
+      try {
+        setIsLoading(true); 
+        request = enqueueRequest(
+          `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
+          `&from=1&count=1&showUnofficial=true&handles=${handle}`
+        ); 
+        const data = await request.ready; 
+        if(!ignore) {
+          if(data.status === 'OK') {
+            setContest(data.result.contest); 
+            setProblems(data.result.problems); 
+            if(handle.length && data.result.rows.length && data.result.rows[0].party.participantType !== 'PRACTICE') {
+              setInitialScores(data.result.rows[0].problemResults); 
+              setScores(data.result.rows[0].problemResults); 
+              setSubmitTimes(data.result.rows[0].problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds') ? 
+                Math.floor(s.bestSubmissionTimeSeconds/60).toString() : '')); 
+              setAttemptCounts(data.result.rows[0].problemResults.map(s => s.rejectedAttemptCount.toString()));  
+              setPoints(data.result.rows[0].problemResults.reduce((acc, cur) => acc + cur.points, 0)); 
+              setPenalty(data.result.contest.type === 'ICPC' ? getTotalTime(data.result.contest.type, 
+                data.result.rows[0].problemResults) : 0); 
+            } else {
+              setInitialScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+              setScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+              setSubmitTimes(Array(data.result.problems.length).fill('')); 
+              setAttemptCounts(Array(data.result.problems.length).fill('0')); 
+              setPoints(0); 
+              setPenalty(0); 
+            }
           } else {
-            setInitialScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-            setScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-            setSubmitTimes(Array(data.result.problems.length).fill('')); 
-            setAttemptCounts(Array(data.result.problems.length).fill('0')); 
-            setPoints(0); 
-            setPenalty(0); 
-          }
-        } else {
-          const resNoHandle = await enqueueRequest(
-            `https://codeforces.com/api/contest.standings?` + 
-            `contestId=${contestId}&from=1&count=1`
-          ).ready; 
-          const dataNoHandle = await resNoHandle.json();  
-          if(dataNoHandle.status === 'OK') {
-            setContest(dataNoHandle.result.contest); 
-            setProblems(dataNoHandle.result.problems); 
-            setInitialScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-            setScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-            setSubmitTimes(Array(dataNoHandle.result.problems.length).fill('')); 
-            setAttemptCounts(Array(dataNoHandle.result.problems.length).fill('0')); 
-            setPoints(0); 
-            setPenalty(0); 
-          } else {
-            setNullContest(); 
+            request = enqueueRequest(
+              `https://codeforces.com/api/contest.standings?` + 
+              `contestId=${contestId}&from=1&count=1`
+            ); 
+            const dataNoHandle = await request.ready; 
+            if(dataNoHandle.status === 'OK') {
+              setContest(dataNoHandle.result.contest); 
+              setProblems(dataNoHandle.result.problems); 
+              setInitialScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+              setScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+              setSubmitTimes(Array(dataNoHandle.result.problems.length).fill('')); 
+              setAttemptCounts(Array(dataNoHandle.result.problems.length).fill('0')); 
+              setPoints(0); 
+              setPenalty(0); 
+            } else {
+              setNullContest(); 
+            }
           }
         }
+        setIsLoading(false); 
+      } catch(err) {
+        console.log(err.message); 
       }
-      setIsLoading(false); 
     }
 
     if(contestId) {
@@ -537,8 +534,11 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty,
       setNullContest(); 
     }
 
-    return () => ignore = true; 
-  }, [contestId, handle, setPoints, setPenalty, setIsLoading]); 
+    return () => {
+      ignore = false; 
+      request?.abort(); 
+    }
+  }, [contestId, handle, setPoints, setPenalty, setIsLoading ]); 
 
   if(!isLoading) {
     return (

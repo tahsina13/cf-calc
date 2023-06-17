@@ -90,43 +90,41 @@ function adjustRatingChanges(contestants) {
 
 export default async function getRatingChange(handle, contestId, oldRating, points, penalty) {
   if(!memContest || memContest.id !== contestId) {
-    const standingsRes = await enqueueRequest(
+    const standings = await enqueueRequest(
       `https://codeforces.com/api/contest.standings?` + 
       `contestId=${contestId}&showUnofficial=true`
     ).ready;   
-    const standingsData = await standingsRes.json(); 
-    if(standingsData.status === 'FAILED') {
-      throw Error(standingsData.comment); 
+    if(standings.status === 'FAILED') {
+      throw Error(standings.comment); 
     }
-    const ratingChangesRes = await enqueueRequest(
+    const ratingChanges = await enqueueRequest(
       `https://codeforces.com/api/contest.ratingChanges?contestId=${contestId}`
     ).ready; 
-    const ratingChangesData = await ratingChangesRes.json(); 
-    if(ratingChangesData.status === 'FAILED') {
-      throw Error(ratingChangesData.comment); 
+    if(ratingChanges.status === 'FAILED') {
+      throw Error(ratingChanges.comment); 
     }
-    if(!ratingChangesData.result.length) {
+    if(!ratingChanges.result.length) {
       throw Error('No rating changes found. Presumably rolled back or not updated yet.'); 
     }
-    standingsData.result.rows.sort((a, b) => {
+    standings.result.rows.sort((a, b) => {
       if(a.rank === b.rank) {
         return a.party.members[0].handle.localeCompare(b.party.members[0].handle); 
       } else {
         return a.rank - b.rank; 
       }
     }); 
-    ratingChangesData.result.sort((a, b) => {
+    ratingChanges.result.sort((a, b) => {
       if(a.rank === b.rank) {
         return a.handle.localeCompare(b.handle); 
       } else {
         return a.rank - b.rank; 
       }
     }); 
-    memContest = standingsData.result.contest; 
-    memRatingChanges = ratingChangesData.result; 
+    memContest = standings.result.contest; 
+    memRatingChanges = ratingChanges.result; 
     memStandings = []; 
     let cur = 0; 
-    for(const row of standingsData.result.rows) {
+    for(const row of standings.result.rows) {
       if(cur < memRatingChanges.length && memRatingChanges[cur].handle === row.party.members[0].handle) {
         row.rank = memRatingChanges[cur].rank; 
         memStandings.push(row); 
