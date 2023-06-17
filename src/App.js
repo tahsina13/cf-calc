@@ -126,7 +126,7 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
           />
           <Scoreboard 
             theme={theme}
-            contestId={contestId} handle={handle}
+            contestId={contestId} handle={handle.toLowerCase()}
             isLoading={isLoading} setIsLoading={setIsLoading}
             setPoints={setPoints} setPenalty={setPenalty} 
           />
@@ -154,6 +154,7 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
       if(data.status === 'OK') {
         if(data.result.length && data.result[0].hasOwnProperty('rating')) {
           setUser(data.result[0]); 
+          setHandle(data.result[0].handle); 
         } else {
           setUser(null); 
         }
@@ -178,7 +179,7 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
               ? `user-${getRatingColor(user.rating)} fw-bold` : ''
           }}
           types={{both: 'text'}}
-          values={{both: user ? user.handle : handle}}
+          values={{both: handle}}
           onChange={e => updateUserInfo(e.target.value)}
           onKeyDown={e => {
             if(e.key === 'Enter') {
@@ -382,7 +383,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
         isLoading={isLoading}
         onFocus={getContestData}
         onChange={newValue => setContestId(newValue ? parseInt(newValue.value) : 0)}
-        cacheOptions defaultOptions={defaultOptions} loadOptions={loadOptions}
+        cacheOptions={!isLoading} defaultOptions={defaultOptions} loadOptions={loadOptions}
       />
     </Row>
   );
