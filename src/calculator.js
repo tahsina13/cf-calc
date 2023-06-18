@@ -5,20 +5,19 @@ let memRatingChanges = null;
 let memStandings = null; 
 const memRanks = Array(8001); 
 
-function Contestant(handle, rating, points, penalty) {
-  if(!new.target) {
-    return new Contestant(handle, rating, points, penalty); 
+class Contestant {
+  constructor(handle, rating, points, penalty) {
+    this.handle = handle; 
+    this.rating = rating; 
+    this.points = points; 
+    this.penalty = penalty; 
+    this.rank = 0; 
+    this.seed = 0; 
+    this.needRating = 0; 
+    this.delta = 0; 
+    this.performance = 0; 
   }
-  this.handle = handle; 
-  this.rating = rating; 
-  this.points = points; 
-  this.penalty = penalty; 
-  this.rank = 0; 
-  this.seed = 0; 
-  this.needRating = 0; 
-  this.delta = 0; 
-  this.performance = 0; 
-}
+}; 
 
 function getEloWinProbability(ra, rb) {
   return 1.0 / (1 + Math.pow(10, (rb - ra) / 400.0)); 
@@ -89,49 +88,54 @@ function adjustRatingChanges(contestants) {
 }
 
 export default async function getRatingChange(handle, contestId, oldRating, points, penalty) {
-  if(!memContest || memContest.id !== contestId) {
-    const standings = await enqueueRequest(
-      `https://codeforces.com/api/contest.standings?` + 
-      `contestId=${contestId}&showUnofficial=true`
-    ).ready;   
-    if(standings.status === 'FAILED') {
-      throw Error(standings.comment); 
-    }
-    const ratingChanges = await enqueueRequest(
-      `https://codeforces.com/api/contest.ratingChanges?contestId=${contestId}`
-    ).ready; 
-    if(ratingChanges.status === 'FAILED') {
-      throw Error(ratingChanges.comment); 
-    }
-    if(!ratingChanges.result.length) {
-      throw Error('No rating changes found. Presumably rolled back or not updated yet.'); 
-    }
-    standings.result.rows.sort((a, b) => {
-      if(a.rank === b.rank) {
-        return a.party.members[0].handle.localeCompare(b.party.members[0].handle); 
-      } else {
-        return a.rank - b.rank; 
+  try {
+    if(!memContest || memContest.id !== contestId) {
+      const standings = await enqueueRequest(
+        `https://codeforces.com/api/contest.standings?` + 
+        `contestId=${contestId}&showUnofficial=true`
+      ).ready;   
+      if(standings.status === 'FAILED') {
+        throw Error(standings.comment); 
       }
-    }); 
-    ratingChanges.result.sort((a, b) => {
-      if(a.rank === b.rank) {
-        return a.handle.localeCompare(b.handle); 
-      } else {
-        return a.rank - b.rank; 
+      const ratingChanges = await enqueueRequest(
+        `https://codeforces.com/api/contest.ratingChanges?contestId=${contestId}`
+      ).ready; 
+      if(ratingChanges.status === 'FAILED') {
+        throw Error(ratingChanges.comment); 
       }
-    }); 
-    memContest = standings.result.contest; 
-    memRatingChanges = ratingChanges.result; 
-    memStandings = []; 
-    let cur = 0; 
-    for(const row of standings.result.rows) {
-      if(cur < memRatingChanges.length && memRatingChanges[cur].handle === row.party.members[0].handle) {
-        row.rank = memRatingChanges[cur].rank; 
-        memStandings.push(row); 
-        cur++; 
+      if(!ratingChanges.result.length) {
+        throw Error('No rating changes found. Presumably rolled back or not updated yet.'); 
       }
-    }   
-    memRanks.fill(0); 
+      standings.result.rows.sort((a, b) => {
+        if(a.rank === b.rank) {
+          return a.party.members[0].handle.localeCompare(b.party.members[0].handle); 
+        } else {
+          return a.rank - b.rank; 
+        }
+      }); 
+      ratingChanges.result.sort((a, b) => {
+        if(a.rank === b.rank) {
+          return a.handle.localeCompare(b.handle); 
+        } else {
+          return a.rank - b.rank; 
+        }
+      }); 
+      memContest = standings.result.contest; 
+      memRatingChanges = ratingChanges.result; 
+      memStandings = []; 
+      let cur = 0; 
+      for(const row of standings.result.rows) {
+        if(cur < memRatingChanges.length && memRatingChanges[cur].handle === row.party.members[0].handle) {
+          row.rank = memRatingChanges[cur].rank; 
+          memStandings.push(row); 
+          cur++; 
+        }
+      }   
+      memRanks.fill(0); 
+    }
+  } catch(err) {
+    memContest = null; 
+    throw err; 
   }
    
   const contestants = []; 

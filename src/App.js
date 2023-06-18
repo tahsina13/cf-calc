@@ -9,6 +9,7 @@ import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button'; 
 import Container from 'react-bootstrap/Container'; 
 import Form from 'react-bootstrap/Form'; 
+import InputGroup from 'react-bootstrap/InputGroup'; 
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row'; 
@@ -143,14 +144,18 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
 
 function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user, setUser }) {  
   const [request, setRequest] = useState(null); 
+  const [isLoading, setIsLoading] = useState(false); 
+  const [isHandleFocused, setIsHandleFocused] = useState(false); 
 
   const updateUserInfo = async (handle) => {
-    request?.abort(); 
     setHandle(handle); 
+    request?.abort(); 
     const req = enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
     setRequest(req); 
     try {
+      setIsLoading(true);
       const data = await req.ready; 
+      setIsLoading(false); 
       if(data.status === 'OK') {
         if(data.result.length && data.result[0].hasOwnProperty('rating')) {
           setUser(data.result[0]); 
@@ -170,23 +175,30 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
   return (
     <Row className='user-info mx-auto my-3 p-1'>
       <Col>
-        <FocusedInput
-          theme={theme}
-          placeholder='Your Handle'
-          classNames={{
-            both: `bg-${theme} text-${getInverseTheme(theme)}`,
-            blur: user && user.hasOwnProperty('rating') 
-              ? `user-${getRatingColor(user.rating)} fw-bold` : ''
-          }}
-          types={{both: 'text'}}
-          values={{both: handle}}
-          onChange={e => updateUserInfo(e.target.value)}
-          onKeyDown={e => {
-            if(e.key === 'Enter') {
-              e.preventDefault(); 
-            }
-          }}
-        />
+        <InputGroup>
+          <FocusedInput
+            theme={theme}
+            placeholder='Your Handle'
+            classNames={{
+              both: isLoading ? 'border-end-0' : '',
+              blur: user && user.hasOwnProperty('rating') ? `user-${getRatingColor(user.rating)} fw-bold` : ''
+            }}
+            types={{both: 'text'}}
+            values={{both: handle}}
+            onChange={e => updateUserInfo(e.target.value)}
+            onKeyDown={e => {
+              if(e.key === 'Enter') {
+                e.preventDefault(); 
+              }
+            }}
+            onFocus={() => setIsHandleFocused(true)}
+            onBlur={() => setIsHandleFocused(false)}
+          />
+          {isLoading && 
+            <InputGroup.Text className={`bg-${theme} border-start-0 ${isHandleFocused ? 'border-2 border-primary' : ''}`}>
+              <Spinner size='sm' animation='grow' variant={getInverseTheme(theme)}/>
+            </InputGroup.Text>}
+        </InputGroup>
       </Col>
       <Col>
         <FocusedInput
@@ -195,7 +207,6 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
           types={{both: 'number'}}
           values={{both: rating}}
           classNames={{
-            both: `bg-${theme} text-${getInverseTheme(theme)}`,
             blur: rating.length ? `user-${getRatingColor(rating)} fw-bold` : ''
           }}
           onChange={e => setRating(e.target.value)}
@@ -241,8 +252,11 @@ function FocusedInput(props) {
             : (styles && styles.hasOwnProperty('blur') ? styles.blur : {}))
       }}
       className={[
+        `bg-${theme}`,
         `text-${getInverseTheme(theme)}`,
+        'shadow-none',
         classNames && classNames.hasOwnProperty('both') ? classNames.both : '',
+        focused ? 'border-2 border-primary' : '',
         focused
           ? (classNames && classNames.hasOwnProperty('focus') ? classNames.focus : '')
           : (classNames && classNames.hasOwnProperty('blur') ? classNames.blur : '')
@@ -370,7 +384,7 @@ function ContestSelect({ theme = 'light', setContestId }) {
       <AsyncSelect
         components={{ Option }}
         classNames={{
-          control: () => `bg-${theme}`,
+          control: (state) => `bg-${theme} ${state.isFocused ? 'border-2 border-primary' : ''}`,
           input: () => `text-${getInverseTheme(theme)}`,
           menu: () => `bg-${theme}`,
           placeholder: () => `text-${getInverseTheme(theme)}`,
@@ -541,6 +555,13 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
     }
   }, [contestId, handle, setPoints, setPenalty, setIsLoading ]); 
 
+  const labelCellClasses = [
+    'border', `border-${getInverseTheme(theme)}`, 
+    'text-center'].join(' '); 
+  const inputCellClasses = [
+    `${!contestId ? 'bg-secondary' : ''}`, 
+    'border', `border-${getInverseTheme(theme)}`, 
+    'text-center'].join(' '); 
   if(!isLoading) {
     return (
       <Row className='scoreboard mx-auto my-3 p-1'>
@@ -548,11 +569,11 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
           <colgroup span={(problems.length+1).toString()}></colgroup>
           <thead>
             <tr className='top-row'>
-              <th className={`border border-${getInverseTheme(theme)} text-center`}>
+              <th className={labelCellClasses}>
                 <span>=</span>
               </th>
               {problems.map(p => 
-                <th key={contestId + p.index} className={`border border-${getInverseTheme(theme)} text-center`}>
+                <th key={contestId + p.index} className={labelCellClasses}>
                   <span>
                     {!contest ? <>{p.index}</> : <a href={getProblemLink(contestId, p.index)} 
                       target='_blank' rel='noreferrer'>{p.index}</a>}
@@ -564,22 +585,22 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
           </thead>
           <tbody>
             <tr className='top-row'>
-              <td className={`border border-${getInverseTheme(theme)} text-center`}>
+              <td className={labelCellClasses}>
                 <span>{scores.reduce((acc, cur) => acc + cur.points, 0)}</span>
               </td>
               {scores.map((score, idx) => 
-                <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
+                <td key={contestId + problems[idx].index} className={inputCellClasses}>
                   {contest ? <PointsCell theme={theme} type={contest.type} score={score} /> : <span></span>}
                 </td>
               )}
               <td className='border-0'></td>
             </tr>
             <tr className='bottom-row'>
-              <td className={`border border-${getInverseTheme(theme)} text-center`}>
+              <td className={labelCellClasses}>
                 <span>{contest ? getTotalTime(contest.type, scores) : 0}</span>
               </td>
               {submitTimes.map((submitTime, idx) =>
-                <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
+                <td key={contestId + problems[idx].index} className={inputCellClasses}>
                   <FocusedInput 
                     theme={theme}
                     disabled={!contest}
@@ -604,16 +625,17 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
               <td className='border-0'></td>
             </tr>
             <tr className='bottom-row'>
-              <td className={`border border-${getInverseTheme(theme)} text-center`}>
+              <td className={labelCellClasses}>
                 <span>{scores.reduce((acc, cur) => acc + cur.rejectedAttemptCount, 0)}</span>
               </td>
               {attemptCounts.map((attemptCount, idx) =>
-                <td key={contestId + problems[idx].index} className={`${(!contestId ? 'bg-secondary' : '')} border border-${getInverseTheme(theme)} text-center`}>
-                  <Form.Control
-                    type='number' size='md' className='p-0'
-                    style={{color: theme === 'light' ? 'black' : 'white'}}
+                <td key={contestId + problems[idx].index} className={inputCellClasses}>
+                  <FocusedInput
+                    theme={theme}
                     disabled={!contest}
-                    value={attemptCount}
+                    classNames={{both: 'p-0'}}
+                    types={{both: 'number'}}
+                    values={{both: attemptCount}}
                     onChange={e => {
                       let newAttemptCounts = attemptCounts.slice(); 
                       newAttemptCounts[idx] = e.target.value; 
@@ -625,9 +647,8 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
                         updateScore(idx); 
                       }
                     }}
-                    onBlur={_ => updateScore(idx)}
-                  >
-                  </Form.Control>
+                    onBlur={() => updateScore(idx)}
+                  />
                 </td>
               )}
               <td className='border-0'>
@@ -684,19 +705,19 @@ function CalculatorOutput({ theme = 'light', calculationStatus, results }) {
   switch(calculationStatus) {
     case CalculationStatus.CALCULATION_IN_PROGRESS: 
       return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
+        <Row className={'calculator-output mx-auto my-3 text-center'}>
           <Spinner animation='border' variant={getInverseTheme(theme)} className='mx-auto'/>
         </Row>
       ); 
     case CalculationStatus.CALCULATION_DONE: 
       return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
+        <Row className={'calculator-output mx-auto my-3 text-center'}>
           <ResultTable theme={theme} results={results} />
         </Row>
       ); 
     case CalculationStatus.CALCULATION_FAILED: 
       return (
-        <Row className='calculator-output mx-auto my-3 text-center'>
+        <Row className={'calculator-output mx-auto my-3 text-center'}>
           <span className='mx-auto text-danger'>Contest not found, or not rated, or not finished yet.</span>
         </Row>
       ); 
@@ -706,34 +727,38 @@ function CalculatorOutput({ theme = 'light', calculationStatus, results }) {
 }
 
 function ResultTable({ theme = 'light', results }) {
+  const labelCellClasses = ['py-3', 'border-start', `border-${getInverseTheme(theme)}`, 'text-start'].join(' '); 
+  const resultCellClasses = ['py-3', 'border-end', `border-${getInverseTheme(theme)}`, 'text-end'].join(' '); 
   if(results) {
     return (
-      <Table striped hover size='xl' variant={theme} className={`mx-auto border-top border-bottom border-${getInverseTheme(theme)} shadow`}>
+      <Table striped hover size='xl' variant={theme} 
+        className={`mx-auto border-top border-bottom border-${getInverseTheme(theme)} shadow`}>
         <tbody>
           <tr>
-            <th className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Results</span></th>
-            <th className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}><span></span></th>
+            <th className={labelCellClasses}><span>Results</span></th>
+            <th className={resultCellClasses}><span></span></th>
           </tr>
           <tr>
-            <td className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Expected Rank</span></td>
-            <td className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}><span>{Math.floor(results.seed)}</span></td>
+            <td className={labelCellClasses}><span>Expected Rank</span></td>
+            <td className={resultCellClasses}><span>{Math.floor(results.seed)}</span></td>
           </tr>
           <tr>
-            <td className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Actual Rank</span></td>
-            <td className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}><span>{results.rank}</span></td>
+            <td className={labelCellClasses}><span>Actual Rank</span></td>
+            <td className={resultCellClasses}><span>{results.rank}</span></td>
           </tr>
           <tr>
-            <td className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Performance</span></td>
-            <td className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}>
+            <td className={labelCellClasses}><span>Performance</span></td>
+            <td className={resultCellClasses}>
               <span style={{fontWeight: 'bold'}} className={`user-${getRatingColor(results.performance)}`}>
                 {results.performance}
               </span>
             </td>
           </tr>
           <tr>
-            <td className={`py-3 border-start border-${getInverseTheme(theme)} text-start`}><span>Rating Change</span></td>
-            <td className={`py-3 border-end border-${getInverseTheme(theme)} text-end`}>
-              <span style={{fontWeight: 'bold'}} className={`rating-${results.delta ? (results.delta > 0 ? 'increase' : 'decrease') : 'constant'}`}>
+            <td className={labelCellClasses}><span>Rating Change</span></td>
+            <td className={resultCellClasses}>
+              <span style={{fontWeight: 'bold'}} className={`rating-${results.delta 
+                ? (results.delta > 0 ? 'increase' : 'decrease') : 'constant'}`}>
                 {`${results.delta > 0 ? '+' : ''}${results.delta}`}
               </span>
             </td>
