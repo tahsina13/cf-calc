@@ -83,7 +83,11 @@ export default function App() {
           calculationStatus={calculationStatus} 
           setCalculationStatus={setCalculationStatus} 
         />
-        <CalculatorOutput theme={theme} calculationStatus={calculationStatus} results={results} />
+        <CalculatorOutput 
+          theme={theme} 
+          calculationStatus={calculationStatus} 
+          results={results} 
+        />
       </Container>
     </>
   );    
@@ -91,15 +95,18 @@ export default function App() {
 
 function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, setResults }) {
   const [contestId, setContestId] = useState(0); 
-  const [handle, setHandle] = useState(''); 
-  const [rating, setRating] = useState(''); 
   const [user, setUser] = useState(null); 
-  const [points, setPoints] = useState(0); 
-  const [penalty, setPenalty] = useState(0); 
+  const [rating, setRating] = useState(''); 
+  const [points, setPoints] = useState(-1); 
+  const [penalty, setPenalty] = useState(-1); 
 
   return (
     <Row>
-      <Card body bg={theme} border={getInverseTheme(theme)} className={`calculator mx-auto my-3 shadow text-${getInverseTheme(theme)}`}>
+      <Card body 
+        bg={theme} 
+        border={getInverseTheme(theme)} 
+        className={`calculator mx-auto my-3 shadow text-${getInverseTheme(theme)}`}
+      >
         <Card.Title>Rating Calculator</Card.Title>
         <Form 
           onSubmit={e => {
@@ -114,12 +121,11 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
                 setCalculationStatus(CalculationStatus.CALCULATION_FAILED); 
                 console.log(err.message); 
               }); 
-          }}>
+        }}>
           <UserInfo 
             theme={theme}
-            handle={handle} setHandle={setHandle}
-            rating={rating} setRating={setRating} 
             user={user} setUser={setUser} 
+            rating={rating} setRating={setRating} 
           />
           <ContestSelect 
             theme={theme} 
@@ -132,7 +138,7 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
           />
           <SubmitButton 
             theme={theme} 
-            disabled={(!user && !rating.length) || !contestId || !points || !penalty ||
+            disabled={(!user && !rating.length) || !contestId || points < 0 || penalty < 0 ||
               calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS}
           /> 
         </Form>
@@ -245,7 +251,7 @@ function FocusedInput(props) {
       size={size}
       step={step}
       placeholder={placeholder}
-      disabled={disabled ? disabled : false}
+      disabled={disabled}
       style={{
         ...(styles && styles.hasOwnProperty('both') ? styles.both : {}), 
         ...(focused 
@@ -527,8 +533,8 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty 
       setIsLoading(false); 
     }
 
-    setPoints(null); 
-    setPenalty(null); 
+    setPoints(-1); 
+    setPenalty(-1); 
     if(contestId) {
       getScores(); 
     } else {
@@ -800,7 +806,13 @@ function PointsCell({ theme = 'light', className, contest, handle, index, score}
 function SubmitButton({ theme = 'light', disabled }) {
   return (
     <Row className='submit-button mx-auto my-3 p-1'>
-      <Button type='submit' variant={`${theme === 'light' ? 'outline-' : ''}primary`} disabled={disabled}>Calculate</Button>
+      <Button 
+        type='submit' 
+        variant={`${theme === 'light' ? 'outline-' : ''}primary`} 
+        disabled={disabled}
+      >
+        Calculate
+      </Button>
     </Row>
   ); 
 }
