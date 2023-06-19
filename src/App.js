@@ -595,7 +595,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty 
                 <td key={contestId + problems[idx].index} className={inputCellClasses}>
                   <FocusedInput 
                     theme={theme}
-                    disabled={!contest}
+                    disabled={!contest.id}
                     classNames={{both: 'p-0'}}
                     types={{focus: 'number', blur: 'text'}}
                     values={{focus: submitTime, blur: getTimeStr(submitTime)}}
@@ -624,7 +624,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty 
                 <td key={contestId + problems[idx].index} className={inputCellClasses}>
                   <FocusedInput
                     theme={theme}
-                    disabled={!contest}
+                    disabled={!contest.id}
                     classNames={{both: 'p-0'}}
                     types={{both: 'number'}}
                     values={{both: attemptCount}}
@@ -736,24 +736,26 @@ function PointsCell({ theme = 'light', className, contest, handle, index, score}
   }
 
   const handleShow = async () => {
-    setShowSubmissions(true); 
-    setSubmissions([]); 
-    setIsLoading(true); 
-    if(contest.id && handle.length) {
-      const req = enqueueRequest(`https://codeforces.com/api/contest.status?contestId=${contest.id}&handle=${handle}`);   
-      setRequest(req); 
-      try {
-        const data = await req.ready; 
-        if(data.status === 'OK') {
-          setSubmissions(data.result.filter(s => s.problem.index === index).reverse()); 
-        } else {
-          throw Error(data.message); 
+    if(contest.id) {
+      setShowSubmissions(true); 
+      setSubmissions([]); 
+      setIsLoading(true); 
+      if(contest.id && handle.length) {
+        const req = enqueueRequest(`https://codeforces.com/api/contest.status?contestId=${contest.id}&handle=${handle}`);   
+        setRequest(req); 
+        try {
+          const data = await req.ready; 
+          if(data.status === 'OK') {
+            setSubmissions(data.result.filter(s => s.problem.index === index).reverse()); 
+          } else {
+            throw Error(data.message); 
+          }
+        } catch(err) {
+          console.log(err.message);  
         }
-      } catch(err) {
-        console.log(err.message);  
       }
+      setIsLoading(false); 
     }
-    setIsLoading(false); 
   }
 
   const handleHide = () => {
