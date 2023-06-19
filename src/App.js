@@ -10,6 +10,7 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container'; 
 import Form from 'react-bootstrap/Form'; 
 import InputGroup from 'react-bootstrap/InputGroup'; 
+import Modal from 'react-bootstrap/Modal';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row'; 
@@ -89,7 +90,6 @@ export default function App() {
 }
 
 function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, setResults }) {
-  const [isLoading, setIsLoading] = useState(false);  
   const [contestId, setContestId] = useState(0); 
   const [handle, setHandle] = useState(''); 
   const [rating, setRating] = useState(''); 
@@ -127,14 +127,13 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
           />
           <Scoreboard 
             theme={theme}
-            contestId={contestId} handle={handle.toLowerCase()}
-            isLoading={isLoading} setIsLoading={setIsLoading}
+            contestId={contestId} handle={user ? user.handle : ''}
             setPoints={setPoints} setPenalty={setPenalty} 
           />
           <SubmitButton 
             theme={theme} 
-            disabled={calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS || 
-              !contestId || isLoading || (!user && !rating.length)}
+            disabled={(!user && !rating.length) || !contestId || !points || !penalty ||
+              calculationStatus === CalculationStatus.CALCULATION_IN_PROGRESS}
           /> 
         </Form>
       </Card>
@@ -142,20 +141,20 @@ function Calculator({ theme = 'light', calculationStatus, setCalculationStatus, 
   );
 }
 
-function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user, setUser }) {  
-  const [request, setRequest] = useState(null); 
-  const [isLoading, setIsLoading] = useState(false); 
+function UserInfo({ theme = 'light', user, setUser, rating, setRating }) {  
+  const [handle, setHandle] = useState(''); 
   const [isHandleFocused, setIsHandleFocused] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false); 
+  const [request, setRequest] = useState(null); 
 
   const updateUserInfo = async (handle) => {
-    setHandle(handle); 
     request?.abort(); 
+    setHandle(handle); 
+    setIsLoading(true); 
     const req = enqueueRequest(`https://codeforces.com/api/user.info?handles=${handle}`); 
     setRequest(req); 
     try {
-      setIsLoading(true);
       const data = await req.ready; 
-      setIsLoading(false); 
       if(data.status === 'OK') {
         if(data.result.length && data.result[0].hasOwnProperty('rating')) {
           setUser(data.result[0]); 
@@ -170,6 +169,7 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
       setUser(null); 
       console.log(err.message); 
     }
+    setIsLoading(false); 
   }
 
   return (
@@ -180,7 +180,7 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
             theme={theme}
             placeholder='Your Handle'
             classNames={{
-              both: isLoading ? 'border-end-0' : '',
+              both: `shadow-none ${isLoading ? 'border-end-0' : ''}`,
               blur: user && user.hasOwnProperty('rating') ? `user-${getRatingColor(user.rating)} fw-bold` : ''
             }}
             types={{both: 'text'}}
@@ -207,6 +207,7 @@ function UserInfo({ theme = 'light', handle, setHandle, rating, setRating, user,
           types={{both: 'number'}}
           values={{both: rating}}
           classNames={{
+            both: 'shadow-none',
             blur: rating.length ? `user-${getRatingColor(rating)} fw-bold` : ''
           }}
           onChange={e => setRating(e.target.value)}
@@ -254,7 +255,6 @@ function FocusedInput(props) {
       className={[
         `bg-${theme}`,
         `text-${getInverseTheme(theme)}`,
-        'shadow-none',
         classNames && classNames.hasOwnProperty('both') ? classNames.both : '',
         focused ? 'border-2 border-primary' : '',
         focused
@@ -299,9 +299,9 @@ function FocusedInput(props) {
 }
 
 function ContestSelect({ theme = 'light', setContestId }) {
-  const [isLoading, setIsLoading] = useState(false); 
   const [contestFzf, setContestFzf] = useState(new AsyncFzf([])); 
   const [defaultOptions, setDefaultOptions] = useState([]); 
+  const [isLoading, setIsLoading] = useState(false); 
 
   const Option = (props) => {
     const {
@@ -403,13 +403,14 @@ function ContestSelect({ theme = 'light', setContestId }) {
   );
 }
 
-function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoading, setPoints, setPenalty }) {
-  const [contest, setContest] = useState(null); 
+function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty }) {
+  const [contest, setContest] = useState({id: 0}); 
   const [problems, setProblems] = useState([]);  
   const [initialScores, setInitialScores] = useState([]); 
   const [scores, setScores] = useState([]); 
   const [submitTimes, setSubmitTimes] = useState([]); 
   const [attemptCounts, setAttemptCounts] = useState([]); 
+  const [isLoading, setIsLoading] = useState(false); 
 
   const getProblemLink = (contestId, index) => 
     `https://codeforces.com/contest/${contestId}/problem/${index}`; 
@@ -477,76 +478,61 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
     let ignore = false; 
     let request = null; 
 
-    const setNullContest = () => {
-      setContest(null); 
-      setProblems(defaultProblems); 
-      setInitialScores(Array(defaultProblems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-      setScores(Array(defaultProblems.length).fill({points: 0., rejectedAttemptCount: 0}));
-      setSubmitTimes(Array(defaultProblems.length).fill('')); 
-      setAttemptCounts(Array(defaultProblems.length).fill('0')); 
-      setPoints(0); 
-      setPenalty(0); 
-    }
-
-    const getScores = async () => {
-      try {
-        setIsLoading(true); 
-        request = enqueueRequest(
-          `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
-          `&from=1&count=1&showUnofficial=true&handles=${handle}`
-        ); 
-        const data = await request.ready; 
-        if(!ignore) {
-          if(data.status === 'OK') {
-            setContest(data.result.contest); 
-            setProblems(data.result.problems); 
-            if(handle.length && data.result.rows.length && data.result.rows[0].party.participantType !== 'PRACTICE') {
-              setInitialScores(data.result.rows[0].problemResults); 
-              setScores(data.result.rows[0].problemResults); 
-              setSubmitTimes(data.result.rows[0].problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds') ? 
-                Math.floor(s.bestSubmissionTimeSeconds/60).toString() : '')); 
-              setAttemptCounts(data.result.rows[0].problemResults.map(s => s.rejectedAttemptCount.toString()));  
-              setPoints(data.result.rows[0].problemResults.reduce((acc, cur) => acc + cur.points, 0)); 
-              setPenalty(data.result.contest.type === 'ICPC' ? getTotalTime(data.result.contest.type, 
-                data.result.rows[0].problemResults) : 0); 
-            } else {
-              setInitialScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-              setScores(Array(data.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-              setSubmitTimes(Array(data.result.problems.length).fill('')); 
-              setAttemptCounts(Array(data.result.problems.length).fill('0')); 
-              setPoints(0); 
-              setPenalty(0); 
-            }
-          } else {
-            request = enqueueRequest(
-              `https://codeforces.com/api/contest.standings?` + 
-              `contestId=${contestId}&from=1&count=1`
-            ); 
-            const dataNoHandle = await request.ready; 
-            if(dataNoHandle.status === 'OK') {
-              setContest(dataNoHandle.result.contest); 
-              setProblems(dataNoHandle.result.problems); 
-              setInitialScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-              setScores(Array(dataNoHandle.result.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
-              setSubmitTimes(Array(dataNoHandle.result.problems.length).fill('')); 
-              setAttemptCounts(Array(dataNoHandle.result.problems.length).fill('0')); 
-              setPoints(0); 
-              setPenalty(0); 
-            } else {
-              setNullContest(); 
-            }
-          }
+    const setupScoreboard = (data) => {
+      if(data) {
+        setContest(data.contest); 
+        setProblems(data.problems); 
+        const hasRow = data.rows.length && data.rows[0].party.participantType !== 'PRACTICE' && 
+          handle.toLowerCase() === data.rows[0].party.members[0].handle.toLowerCase(); 
+        if(hasRow) {
+          setInitialScores(data.rows[0].problemResults); 
+          setScores(data.rows[0].problemResults); 
+          setSubmitTimes(data.rows[0].problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds') 
+            ? Math.floor(s.bestSubmissionTimeSeconds/60).toString() : '')); 
+          setAttemptCounts(data.rows[0].problemResults.map(s => s.rejectedAttemptCount.toString()));  
+          setPoints(data.rows[0].problemResults.reduce((acc, cur) => acc + cur.points, 0)); 
+          setPenalty(data.contest.type === 'ICPC' ? getTotalTime(data.contest.type, data.rows[0].problemResults) : 0); 
+        } else {
+          setInitialScores(Array(data.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+          setScores(Array(data.problems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+          setSubmitTimes(Array(data.problems.length).fill('')); 
+          setAttemptCounts(Array(data.problems.length).fill('0')); 
+          setPoints(0); 
+          setPenalty(0);
         }
-        setIsLoading(false); 
-      } catch(err) {
-        console.log(err.message); 
+      } else {
+        setContest({id: 0}); 
+        setProblems(defaultProblems); 
+        setInitialScores(Array(defaultProblems.length).fill({points: 0., rejectedAttemptCount: 0})); 
+        setScores(Array(defaultProblems.length).fill({points: 0., rejectedAttemptCount: 0}));
+        setSubmitTimes(Array(defaultProblems.length).fill('')); 
+        setAttemptCounts(Array(defaultProblems.length).fill('0')); 
       }
     }
 
+    const getScores = async () => {
+      setIsLoading(true); 
+      request = enqueueRequest(
+        `https://codeforces.com/api/contest.standings?contestId=${contestId}` + 
+        `&from=1&count=1&showUnofficial=true&handles=${handle}`
+      );
+      try {
+        const data = await request.ready; 
+        if(!ignore) {
+          setupScoreboard(data?.result); 
+        }
+      } catch(err) {
+        console.log(err.message); 
+      }
+      setIsLoading(false); 
+    }
+
+    setPoints(null); 
+    setPenalty(null); 
     if(contestId) {
       getScores(); 
     } else {
-      setNullContest(); 
+      setupScoreboard(); 
     }
 
     return () => {
@@ -575,8 +561,9 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
               {problems.map(p => 
                 <th key={contestId + p.index} className={labelCellClasses}>
                   <span>
-                    {!contest ? <>{p.index}</> : <a href={getProblemLink(contestId, p.index)} 
-                      target='_blank' rel='noreferrer'>{p.index}</a>}
+                    {!contest 
+                      ? <>{p.index}</> 
+                      : <a href={getProblemLink(contestId, p.index)} target='_blank' rel='noreferrer'>{p.index}</a>}
                   </span>
                 </th>     
               )}
@@ -589,9 +576,14 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
                 <span>{scores.reduce((acc, cur) => acc + cur.points, 0)}</span>
               </td>
               {scores.map((score, idx) => 
-                <td key={contestId + problems[idx].index} className={inputCellClasses}>
-                  {contest ? <PointsCell theme={theme} type={contest.type} score={score} /> : <span></span>}
-                </td>
+                <PointsCell 
+                  theme={theme} 
+                  className={inputCellClasses} 
+                  contest={contest}
+                  handle={handle}
+                  index={problems[idx].index}
+                  score={score}
+                />
               )}
               <td className='border-0'></td>
             </tr>
@@ -680,16 +672,126 @@ function Scoreboard({ theme = 'light', contestId, handle, isLoading, setIsLoadin
         <Spinner animation='border' variant={getInverseTheme(theme)} className='m-auto'/>
       </Row>
     ); 
-  }
+  } 
 } 
 
-function PointsCell({ theme = 'light', type, score }) {
+function PointsCell({ theme = 'light', className, contest, handle, index, score}) {
+  const [showSubmissions, setShowSubmissions] = useState(false); 
+  const [submissions, setSubmissions] = useState([]); 
+  const [isLoading, setIsLoading] = useState(false); 
+  const [request, setRequest] = useState(null); 
+
+  const getSubmissionLink = (contestId, submissionId) => 
+    `https://codeforces.com/contest/${contestId}/submission/${submissionId}`; 
+
+  const getDateStr = (sec) => {
+    const d = new Date(sec*1000); 
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; 
+    return `${months[d.getMonth()]}/${d.getDate()}/${d.getFullYear()} 
+      ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  }
+
+  const getVerdictStr = (verdict, passedTestCount) => {
+    switch(verdict) {
+      case 'OK': 
+        return 'Accepted'; 
+      case 'COMPILATION_ERROR':
+        return 'Compilation error'; 
+      case 'RUNTIME_ERROR': 
+        return `Runtime error on test ${passedTestCount+1}`;
+      case 'WRONG_ANSWER':
+        return `Wrong answer on test ${passedTestCount+1}`; 
+      case 'PRESENTATION_ERROR':
+        return `Presentation error on test ${passedTestCount+1}`
+      case 'TIME_LIMIT_EXCEEDED':
+        return `Time limit exceeded on test ${passedTestCount+1}`; 
+      case 'MEMORY_LIMIT_EXCEEDED':
+        return `Memory limit exceeded on test ${passedTestCount+1}`; 
+      case 'IDLENESS_LIMIT_EXCEEDED':
+        return `Idleness limit exceeded on test ${passedTestCount+1}`
+      case 'CHALLENGED':
+        return 'Hacked'; 
+      case 'SKIPPED': 
+        return 'Skipped'; 
+      case 'TESTING':
+        return `Running on test ${passedTestCount+1}`
+      default: 
+        return ''; 
+    }
+  }
+
+  const getVerdictClass = (verdict) => {
+    switch(verdict) {
+      case 'OK': 
+        return 'cell-accepted'; 
+      case 'CHALLENGED':
+        return 'cell-hacked'; 
+      case 'SKIPPED': 
+        return ''; 
+      case 'TESTING':
+        return 'cell-testing'; 
+      default: 
+        return `cell-rejected-${theme}`
+    }
+  }
+
+  const handleShow = async () => {
+    setShowSubmissions(true); 
+    setSubmissions([]); 
+    setIsLoading(true); 
+    if(contest.id && handle.length) {
+      const req = enqueueRequest(`https://codeforces.com/api/contest.status?contestId=${contest.id}&handle=${handle}`);   
+      setRequest(req); 
+      try {
+        const data = await req.ready; 
+        if(data.status === 'OK') {
+          setSubmissions(data.result.filter(s => s.problem.index === index).reverse()); 
+        } else {
+          throw Error(data.message); 
+        }
+      } catch(err) {
+        console.log(err.message);  
+      }
+    }
+    setIsLoading(false); 
+  }
+
+  const handleHide = () => {
+    request?.abort(); 
+    setShowSubmissions(false); 
+  }
+
   return (
-    <span className={score.points ? 'cell-accepted' : `cell-rejected-${theme}`}>
-      {score.points ? 
-        (type === 'CF' ? score.points.toString() : `+${score.rejectedAttemptCount ? score.rejectedAttemptCount : ''}`) :
-        (score.rejectedAttemptCount ? `-${score.rejectedAttemptCount}` : ' ')}
-    </span>
+    <td key={contest.id + index} className={className} onDoubleClick={handleShow}>
+      <span className={score.points ? 'cell-accepted' : `cell-rejected-${theme}`}>
+        {score.points 
+          ? (contest?.type === 'CF' 
+          ? score.points.toString() 
+          : `+${score.rejectedAttemptCount ? score.rejectedAttemptCount : ''}`) 
+          : (score.rejectedAttemptCount ? `-${score.rejectedAttemptCount}` : ' ')}
+      </span>
+      <Modal show={showSubmissions} onHide={handleHide} className='mx-auto'>
+        <Modal.Header closeButton closeVariant={theme === 'dark' ? 'white' : ''} className={`bg-${theme}`}>
+          <Modal.Title className={`text-${getInverseTheme(theme)}`}>Submissions</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={`bg-${theme}`}>
+          {isLoading
+            ? <Spinner animation='border' variant={getInverseTheme(theme)} size='sm' />
+            : submissions.length
+            ? <ul style={{listStyle: 'none'}} className={`text-${getInverseTheme(theme)} p-1`}>
+                {submissions.map(s => 
+                  <li key={s.id}>
+                    <span>{getDateStr(s.creationTimeSeconds)}</span>
+                    &nbsp;&nbsp; 
+                    <span className={getVerdictClass(s.verdict)}>{getVerdictStr(s.verdict, s.passedTestCount)}</span>
+                    <span> → </span>
+                    <a href={getSubmissionLink(contest.id, s.id)} target='_blank' rel='noreferrer'>{s.id}</a>
+                  </li>)}
+              </ul>
+            : <span className={`text-${getInverseTheme(theme)}`}>No submissions found.</span>}
+        </Modal.Body>
+      </Modal>
+    </td>
   ); 
 }
 

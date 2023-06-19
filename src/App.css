@@ -51,6 +51,14 @@ input::placeholder {
   font-weight: normal; 
 }
 
+.cell-hacked {
+  color: red; 
+}
+
+.cell-testing {
+  color: gray;
+}
+
 .rating-increase {
   color: #0a0; 
 }
@@ -104,6 +112,17 @@ input::placeholder {
   background-color: inherit !important; 
 }
 
+/*
+.modal-header {
+  max-height: 8vh; 
+}
+
+.modal-body {
+  max-height: 90vh; 
+  overflow-y: auto; 
+}
+*/
+
 .calculator-output {
   width: 70%; 
 }
@@ -151,6 +170,11 @@ input::placeholder {
 
   .user-info, .contest-select {
     width: 80%; 
+  }
+
+  .modal-body {
+    max-height: 80vh;
+    overflow: auto;
   }
 
   .calculator-output { 
