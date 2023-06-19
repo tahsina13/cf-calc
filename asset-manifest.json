@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/cf-pillow/static/css/main.95db6cd1.css",
-    "main.js": "/cf-pillow/static/js/main.978b6e08.js",
+    "main.js": "/cf-pillow/static/js/main.53ae7d19.js",
     "static/js/787.34d72801.chunk.js": "/cf-pillow/static/js/787.34d72801.chunk.js",
     "index.html": "/cf-pillow/index.html",
     "main.95db6cd1.css.map": "/cf-pillow/static/css/main.95db6cd1.css.map",
-    "main.978b6e08.js.map": "/cf-pillow/static/js/main.978b6e08.js.map",
+    "main.53ae7d19.js.map": "/cf-pillow/static/js/main.53ae7d19.js.map",
     "787.34d72801.chunk.js.map": "/cf-pillow/static/js/787.34d72801.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.95db6cd1.css",
-    "static/js/main.978b6e08.js"
+    "static/js/main.53ae7d19.js"
   ]
 }
