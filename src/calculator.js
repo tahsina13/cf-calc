@@ -43,23 +43,18 @@ function getRatingToRank(contestants, rank) {
   return left; 
 }
 
-function compareContestants(type, ca, cb) {
-  if(type === 'CF') {
-    return ca.points - cb.points; 
-  } else {
-    if(ca.points !== cb.points) {
-      return ca.points - cb.points; 
-    } else {
-      return cb.penalty - ca.penalty; 
-    }
+function compareContestants(ca, cb) { 
+  if(ca.points === cb.points) {
+    return cb.penalty - ca.penalty; 
   }
+  return ca.points - cb.points; 
 }
 
-function reassignRanks(type, contestants) {
-  contestants.sort((ca, cb) => -compareContestants(type, ca, cb));
+function reassignRanks(contestants) {
+  contestants.sort((ca, cb) => -compareContestants(ca, cb));
   let first = 0; 
   for(let i = 1; i < contestants.length; ++i) {
-    if(compareContestants(type, contestants[first], contestants[i])) {
+    if(compareContestants(contestants[first], contestants[i])) {
       for(let j = first; j < i; ++j) {
         contestants[j].rank = i; 
       }
@@ -147,7 +142,7 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
     }
   }
   contestants.push(new Contestant(handle, oldRating, points, penalty)); 
-  reassignRanks(memContest.type, contestants); 
+  reassignRanks(contestants); 
   for(const c of contestants) {
     c.seed = getSeed(contestants, c.rating) - 0.5; 
     const midRank = Math.sqrt(c.rank * c.seed); 

@@ -29,16 +29,15 @@ const CalculationStatus = Object.freeze({
 }); 
 
 function getInverseTheme(theme) {
-  if(theme === 'light') {
-    return 'dark'; 
-  } else if(theme === 'dark') {
-    return 'light'; 
-  }
-  return ''; 
+  return theme === 'light'
+    ? 'dark'
+    : theme === 'dark'
+    ? 'white'
+    : ''; 
 }
 
 function getRatingColor(rating) {
-  const ratingRange = [Number.MIN_VALUE, 1200, 1400, 1600, 1900, 2200, 2400]; 
+  const ratingRange = [Number.NEGATIVE_INFINITY, 1200, 1400, 1600, 1900, 2200, 2400]; 
   const ratingColor = ['gray', 'green', 'cyan', 'blue', 'violet', 'orange', 'red']; 
   return ratingColor.at(Math.max(-1, ratingRange.findIndex((elem) => elem > rating)-1)); 
 }
@@ -583,6 +582,7 @@ function Scoreboard({ theme = 'light', contestId, handle, setPoints, setPenalty 
               </td>
               {scores.map((score, idx) => 
                 <PointsCell 
+                  key={contestId + problems[idx].index}
                   theme={theme} 
                   className={inputCellClasses} 
                   contest={contest}
@@ -770,7 +770,7 @@ function PointsCell({ theme = 'light', className, contest, handle, index, score}
   }
 
   return (
-    <td key={contest.id + index} className={className} onDoubleClick={handleShow}>
+    <td className={className} onDoubleClick={handleShow}>
       <span className={score.points ? 'cell-accepted' : `cell-rejected-${theme}`}>
         {score.points 
           ? (contest?.type === 'CF' 
