@@ -1,4 +1,4 @@
-# CF Calc (https://tahsina13.github.io/cf-rating-calculator/)
+# CF Calc (https://tahsina13.github.io/cf-calc/)
 
 ## About
 
