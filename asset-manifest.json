@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/cf-pillow/static/css/main.95db6cd1.css",
-    "main.js": "/cf-pillow/static/js/main.9aeaa280.js",
-    "static/js/787.34d72801.chunk.js": "/cf-pillow/static/js/787.34d72801.chunk.js",
-    "index.html": "/cf-pillow/index.html",
-    "main.95db6cd1.css.map": "/cf-pillow/static/css/main.95db6cd1.css.map",
-    "main.9aeaa280.js.map": "/cf-pillow/static/js/main.9aeaa280.js.map",
-    "787.34d72801.chunk.js.map": "/cf-pillow/static/js/787.34d72801.chunk.js.map"
+    "main.css": "/cf-calc/static/css/main.95db6cd1.css",
+    "main.js": "/cf-calc/static/js/main.bdccef80.js",
+    "static/js/787.c65b94eb.chunk.js": "/cf-calc/static/js/787.c65b94eb.chunk.js",
+    "index.html": "/cf-calc/index.html",
+    "main.95db6cd1.css.map": "/cf-calc/static/css/main.95db6cd1.css.map",
+    "main.bdccef80.js.map": "/cf-calc/static/js/main.bdccef80.js.map",
+    "787.c65b94eb.chunk.js.map": "/cf-calc/static/js/787.c65b94eb.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.95db6cd1.css",
-    "static/js/main.9aeaa280.js"
+    "static/js/main.bdccef80.js"
   ]
 }
