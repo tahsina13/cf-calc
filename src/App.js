@@ -51,11 +51,11 @@ export default function App() {
     <>
       <Navbar bg={theme} variant={theme} sticky='top' className='shadow'>
         <Container fluid>
-          <Navbar.Brand href='#home'>CF Pillow</Navbar.Brand>
+          <Navbar.Brand href='#home'>CF Calc</Navbar.Brand>
           <Navbar.Collapse>
             <Nav navbarScroll>
               <Nav.Item>
-                <Nav.Link href='https://github.com/TahsinAhmed13/cf-pillow.git'>
+                <Nav.Link href='https://github.com/tahsina13/cf-calc'>
                   <Github width='1.5em' height='1.5em' color={theme === 'light' ? 'black' : 'white'}/>{' '}Github
                 </Nav.Link>
               </Nav.Item>

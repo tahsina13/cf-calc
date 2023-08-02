@@ -1,4 +1,4 @@
-# CF Pillow (https://tahsinahmed13.github.io/cf-pillow/)
+# CF Calc (https://tahsina13.github.io/cf-rating-calculator/)
 
 ## About
 
@@ -64,4 +64,3 @@ npm start
 
 * Mike Mirzayanov for creating Codeforces
 * Cfviz for inspiring this project
-* [Pillow icons created by Freepik - Flaticon](https://github.com/ajitid/fzf-for-js) for the favicon

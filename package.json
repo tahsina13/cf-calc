@@ -1,7 +1,7 @@
 {
-  "name": "cf-pillow",
-  "version": "0.2.0",
-  "homepage": "https://TahsinAhmed13.github.io/cf-pillow",
+  "name": "cf-calc",
+  "version": "0.1.0",
+  "homepage": "https://tahsina13.github.io/cf-calc",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",

@@ -1,23 +1,6 @@
 {
-  "short_name": "CF Pillow",
-  "name": "CF Pillow Rating Calculator",
-  "icons": [
-    {
-      "src": "favicon.png",
-      "type": "image/png",
-      "sizes": "64x64 32x32 24x24 16x16"
-    },
-    {
-      "src": "logo256.png",
-      "type": "image/png",
-      "sizes": "256x256"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ],
+  "short_name": "CF Calc",
+  "name": "CF Rating Calculator",
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
