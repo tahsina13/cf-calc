@@ -44,7 +44,7 @@ View your submissions to problems directly without having to go back to Codeforc
 
 ## Build 
 
-This project was built with [create-react-app](https://create-react-app.dev/). If the site is ever down, you can run it locally. 
+This project was built with [Vite](https://vitejs.dev/). If the site is ever down, you can run it locally. 
 
 ```
 git clone https://github.com/TahsinAhmed13/cf-pillow.git
@@ -55,7 +55,7 @@ npm start
 ## Tech Stack and Libraries
 
 * [React](https://react.dev/)
-* [create-react-app](https://create-react-app.dev/)
+* [Vite](https://vitejs.dev/)
 * [React Bootstrap](https://react-bootstrap.netlify.app/)
 * [React Select](https://react-select.com/home)
 * [Fzf](https://github.com/ajitid/fzf-for-js)
