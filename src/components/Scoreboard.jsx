@@ -91,16 +91,16 @@ export default function Scoreboard({ contestId, handle, setPoints, setPenalty })
       if(data) {
         setContest(data.contest);
         setProblems(data.problems);
-        const hasRow = data.rows.length && data.rows[0].party.participantType !== 'PRACTICE' &&
-          handle.toLowerCase() === data.rows[0].party.members[0].handle.toLowerCase();
-        if(hasRow) {
-          setInitialScores(data.rows[0].problemResults);
-          setScores(data.rows[0].problemResults);
-          setSubmitTimes(data.rows[0].problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds')
+        const row = data.rows.find(r => r.party.participantType !== 'PRACTICE' &&
+          r.party.members[0].handle.toLowerCase() === handle.toLowerCase());
+        if(row) {
+          setInitialScores(row.problemResults);
+          setScores(row.problemResults);
+          setSubmitTimes(row.problemResults.map(s => s.hasOwnProperty('bestSubmissionTimeSeconds')
             ? Math.floor(s.bestSubmissionTimeSeconds/60).toString() : ''));
-          setAttemptCounts(data.rows[0].problemResults.map(s => s.rejectedAttemptCount.toString()));
-          setPoints(data.rows[0].problemResults.reduce((acc, cur) => acc + cur.points, 0));
-          setPenalty(data.contest.type === 'ICPC' ? getTotalTime(data.contest.type, data.rows[0].problemResults) : 0);
+          setAttemptCounts(row.problemResults.map(s => s.rejectedAttemptCount.toString()));
+          setPoints(row.problemResults.reduce((acc, cur) => acc + cur.points, 0));
+          setPenalty(data.contest.type === 'ICPC' ? getTotalTime(data.contest.type, row.problemResults) : 0);
         } else {
           setInitialScores(Array(data.problems.length).fill({points: 0., rejectedAttemptCount: 0}));
           setScores(Array(data.problems.length).fill({points: 0., rejectedAttemptCount: 0}));
@@ -121,10 +121,7 @@ export default function Scoreboard({ contestId, handle, setPoints, setPenalty })
 
     const getScores = async () => {
       setIsLoading(true);
-      request = enqueueRequest(
-        `https://codeforces.com/api/contest.standings?contestId=${contestId}` +
-        `&from=1&count=1&showUnofficial=true&handles=${handle}`
-      );
+      request = enqueueRequest(`https://codeforces.com/api/contest.standings?contestId=${contestId}`);
       try {
         const data = await request.ready;
         if(!ignore) {
