@@ -5,54 +5,54 @@ input::-webkit-inner-spin-button {
 }
 
 input::placeholder {
-  color: inherit !important; 
+  color: inherit !important;
 }
 
 .user-red {
-  color: red !important; 
+  color: red !important;
 }
 
 .user-orange {
-  color: #ff8c00 !important; 
+  color: #ff8c00 !important;
 }
 
 .user-violet {
-  color: #a0a !important; 
+  color: #a0a !important;
 }
 
 .user-blue {
-  color: blue !important; 
+  color: blue !important;
 }
 
 .user-cyan {
-  color: #03a89e !important; 
+  color: #03a89e !important;
 }
 
 .user-green {
-  color: green !important; 
+  color: green !important;
 }
 
 .user-gray {
-  color: gray !important; 
+  color: gray !important;
 }
 
 .cell-accepted {
-  color: #0a0; 
-  font-weight: bold; 
+  color: #0a0;
+  font-weight: bold;
 }
 
 .cell-rejected-light {
-  color: #00a; 
-  font-weight: normal; 
+  color: #00a;
+  font-weight: normal;
 }
 
 .cell-rejected-dark {
-  color: #a0a; 
-  font-weight: normal; 
+  color: #a0a;
+  font-weight: normal;
 }
 
 .cell-hacked {
-  color: red; 
+  color: red;
 }
 
 .cell-testing {
@@ -60,154 +60,13 @@ input::placeholder {
 }
 
 .rating-increase {
-  color: #0a0; 
+  color: #0a0;
 }
 
 .rating-decrease {
-  color: #a00; 
+  color: #a00;
 }
 
 .rating-constant {
-  color: #aaa; 
-}
-
-.calculator {
-  width: 95%; 
-}
-
-.calculator form * {
-  font-size: 12px; 
-}
-
-.user-info, .contest-select {
-  width: 95%; 
-}
-
-.user-info input {
-  box-sizing: border-box; 
-  text-align: left; 
-}
-
-.scoreboard {
-  width: 100%; 
-  height: max-content; 
-}
-
-.scoreboard table {
-  position: relative; 
-  left: 1em;   
-  width: max-content; 
-}
-
-.scoreboard table > colgroup {
-  width: 3.2em; 
-}
-
-.scoreboard table input {
-  box-sizing: border-box; 
-  border: 0; 
-  border-radius: 0;
-  text-align: center; 
-  width: 100%; 
-  background-color: inherit !important; 
-}
-
-/*
-.modal-header {
-  max-height: 8vh; 
-}
-
-.modal-body {
-  max-height: 90vh; 
-  overflow-y: auto; 
-}
-*/
-
-.calculator-output {
-  width: 70%; 
-}
-
-.calculator-output * {
-  font-size: 12px; 
-}
-
-.top-row {
-  height: 2.5em
-}
-
-.bottom-row {
-  height: 1em; 
-}
-
-.scoreboard-refresh-button {
-  background-color: transparent; 
-  border: none; 
-  outline: none; 
-}
-
-.submit-button { 
-  width: 7em; 
-}
-
-.submit-button > button {
-  box-sizing: border-box; 
-  text-align: center; 
-  width: 100%; 
-}
-
-.calculator-output > table {
-  width: 100%; 
-}
-
-.calculator-output > span {
-  font-size: 14px; 
-}
-
-@media screen and (min-width: 576px) {
-  .calculator form * {
-    font-size: 14px; 
-  }
-
-  .user-info, .contest-select {
-    width: 80%; 
-  }
-
-  .modal-body {
-    max-height: 80vh;
-    overflow: auto;
-  }
-
-  .calculator-output { 
-    width: 400px; 
-  }
-
-  .calculator-output * {
-    font-size: 14px; 
-  }
-
-  .calculator-output > span {
-    font-size: 16px; 
-  }
-
-  .scoreboard table > colgroup {
-    width: 4em; 
-  }
-}
-
-@media screen and (min-width: 768px) {
-  .calculator {
-    width: 720px; 
-  }  
-
-  .calculator form * {
-    font-size: 16px; 
-  }
-
-  .user-info, .contest-select {
-    width: 70%; 
-  }
-
-  .calculator-output * {
-    font-size: 16px; 
-  }
+  color: #aaa;
 }

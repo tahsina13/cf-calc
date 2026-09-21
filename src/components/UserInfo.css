@@ -1,0 +1,20 @@
+.user-info, .contest-select {
+  width: 95%;
+}
+
+.user-info input {
+  box-sizing: border-box;
+  text-align: left;
+}
+
+@media screen and (min-width: 576px) {
+  .user-info, .contest-select {
+    width: 80%;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .user-info, .contest-select {
+    width: 70%;
+  }
+}
