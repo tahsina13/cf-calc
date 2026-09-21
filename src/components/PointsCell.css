@@ -1,0 +1,6 @@
+@media screen and (min-width: 576px) {
+  .modal-body {
+    max-height: 80vh;
+    overflow: auto;
+  }
+}

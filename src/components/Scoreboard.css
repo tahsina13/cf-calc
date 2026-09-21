@@ -1,0 +1,43 @@
+.scoreboard {
+  width: 100%;
+  height: max-content;
+}
+
+.scoreboard table {
+  position: relative;
+  left: 1em;
+  width: max-content;
+}
+
+.scoreboard table > colgroup {
+  width: 3.2em;
+}
+
+.scoreboard table input {
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  text-align: center;
+  width: 100%;
+  background-color: inherit !important;
+}
+
+.top-row {
+  height: 2.5em
+}
+
+.bottom-row {
+  height: 1em;
+}
+
+.scoreboard-refresh-button {
+  background-color: transparent;
+  border: none;
+  outline: none;
+}
+
+@media screen and (min-width: 576px) {
+  .scoreboard table > colgroup {
+    width: 4em;
+  }
+}

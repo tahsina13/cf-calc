@@ -1,0 +1,9 @@
+.submit-button {
+  width: 7em;
+}
+
+.submit-button > button {
+  box-sizing: border-box;
+  text-align: center;
+  width: 100%;
+}

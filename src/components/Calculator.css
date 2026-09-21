@@ -1,0 +1,23 @@
+.calculator {
+  width: 95%;
+}
+
+.calculator form * {
+  font-size: 12px;
+}
+
+@media screen and (min-width: 576px) {
+  .calculator form * {
+    font-size: 14px;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .calculator {
+    width: 720px;
+  }
+
+  .calculator form * {
+    font-size: 16px;
+  }
+}
