@@ -6,7 +6,7 @@ import App from './components/App';
 import reportWebVitals from './reportWebVitals';
 
 if(!localStorage.getItem('theme')) {
-  localStorage.setItem('theme', 'light'); 
+  localStorage.setItem('theme', 'dark');
 }
 document.body.className = `bg-${localStorage.getItem('theme')}`;  
 
