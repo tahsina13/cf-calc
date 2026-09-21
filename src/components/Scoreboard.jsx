@@ -145,7 +145,7 @@ export default function Scoreboard({ contestId, handle, setPoints, setPenalty })
     }
 
     return () => {
-      ignore = false;
+      ignore = true;
       request?.abort();
     }
   }, [contestId, handle, setPoints, setPenalty, setIsLoading ]);
