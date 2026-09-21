@@ -86,9 +86,8 @@ export default async function getRatingChange(handle, contestId, oldRating, poin
   try {
     if(!memContest || memContest.id !== contestId) {
       const standings = await enqueueRequest(
-        `https://codeforces.com/api/contest.standings?` + 
-        `contestId=${contestId}&showUnofficial=true`
-      ).ready;   
+        `https://codeforces.com/api/contest.standings?contestId=${contestId}`
+      ).ready;
       if(standings.status === 'FAILED') {
         throw Error(standings.comment); 
       }
