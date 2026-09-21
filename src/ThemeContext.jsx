@@ -8,6 +8,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.body.className = `bg-${theme}`;
+    document.documentElement.style.colorScheme = theme;
   }, [theme]);
 
   return (
