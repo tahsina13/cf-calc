@@ -8,7 +8,8 @@ import reportWebVitals from './reportWebVitals';
 if(!localStorage.getItem('theme')) {
   localStorage.setItem('theme', 'dark');
 }
-document.body.className = `bg-${localStorage.getItem('theme')}`;  
+document.body.className = `bg-${localStorage.getItem('theme')}`;
+document.documentElement.style.colorScheme = localStorage.getItem('theme');
 
 const root = createRoot(document.getElementById('root'));
 root.render(
